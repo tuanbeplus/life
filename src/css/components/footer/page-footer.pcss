@@ -1,0 +1,354 @@
+
+@custom-media --pageFooterLrg (min-width: 1251px) ;
+@custom-media --pageFooterNotSml (min-width: 751px);
+@custom-media --pageFooterMed (min-width: 751px) and (max-width: 1250px);
+@custom-media --pageFooterNotLrg (max-width: 1250px);
+@custom-media --pageFooterSml (max-width: 750px);
+
+.page-footer {
+  background: var(--colorWhite);
+  position: relative;
+  z-index: 5;
+  .upper {
+    padding-bottom: 15px;
+    padding-top: 45px;
+    > [class^='center-frame'] {
+      display: flex;
+      flex-wrap: wrap;
+      padding-top: 4px;
+    }
+    ._logos-and-contact {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      padding-bottom: 20px;
+      ._logos {
+        display: grid;
+        font-size: 10px;
+        grid-template-columns: 24em 19em 10.6em;
+        grid-template-rows: auto auto;
+        ._logo {
+          display: flex;
+          align-items: center;
+          width: 100%;
+          img {
+            width: 100%;
+            display: block;
+          }
+          &.-life {
+            grid-column: 1 / 2;
+            grid-row: 1 / 3;
+            padding: 0 5em 0 0;
+          }
+          &.-dv {
+            grid-column: 2 / 3;
+            grid-row: 1 / 2;
+            padding: 0 2.5em 1em 0;
+          }
+          &.-vic-gov {
+            grid-column: 3 / 4;
+            grid-row: 1 / 2;
+            padding: 0.8em 0 0.8em 0;
+          }
+        }
+        ._caption {
+          grid-column: 2 / 4;
+          grid-row: 2 / 3;
+          text-wrap: nowrap;
+          padding-top: 0.2em;
+        }
+      }
+      ._contact {
+        width: 265px;
+        ul {
+          display: flex;
+          margin: 5px -7px -10px -7px;
+          > li {
+            padding: 10px 7px;
+          }
+        }
+      }
+      @media (max-width:1100px) {
+        flex-direction: column;
+        gap: 10vw;
+      }
+      @media (max-width:670px) {
+        ._logos {
+          grid-template-columns: 160px 1fr;
+          grid-template-rows: auto auto auto auto;
+          ._logo {
+            img {
+              /* width: 100%; */
+            }
+            &.-life {
+              grid-column: 1 / 3;
+              grid-row: 1 / 2;
+              padding: 0 0 5vw;
+              img {
+                max-width: 200px;
+              }
+            }
+            &.-dv {
+              grid-column: 1 / 2;
+              grid-row: 2 / 3;
+              padding: 0 2.5em 1em 0;
+              img {
+                /* max-width: 160px; */
+              }
+            }
+            &.-vic-gov {
+              grid-column: 2 / 3;
+              grid-row: 2 / 3;
+              padding: 0.8em 0 0.8em 0;
+              img {
+                max-width: 140px;
+              }
+            }
+          }
+          ._caption {
+            grid-column: 1 / 3;
+            grid-row: 3 / 4;
+            text-wrap: wrap;
+            padding-top: 0.2em;
+          }
+        }
+      }
+    }
+  }
+  .links {
+    padding-bottom: 45px;
+    padding-top: 25px;
+    --cols: 1fr 1fr 1fr 305px;
+    .footer-nav-accordion {
+      display: grid;
+      grid-template-columns: var(--cols);
+      gap: 40px;
+      .-group {
+        --iconVertDisplay: block;
+        em {
+          color: inherit;
+        }
+        .-title {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          --iconDisplay: none;
+          --iconSize: 16px;
+          .-icon {
+            display: var(--iconDisplay);
+            width: var(--iconSize);
+            height: var(--iconSize);
+            position: relative;
+            &::before, &::after {
+              position: absolute;
+              content: '';
+              display: block;
+              height: 2px;
+              right: 0;
+              top: calc(0.5 * var(--iconSize));
+              transform-origin: 50% 50%;
+              width: var(--iconSize);
+              background-color: currentColor;
+            }
+            &::after {
+              transform: rotate(90deg);
+              display: var(--iconVertDisplay);
+            }
+          }
+        }
+        .-links {
+          .-links-inner {
+            padding-top: 15px;
+            .-height {
+              li {
+                line-height: 20px;
+                padding: 10px 0;
+              }
+            }
+          }
+        }
+      }
+      @media (--pageFooterNotSml) {
+        @mixin center-frame;
+      }
+      @media (--pageFooterMed) {
+        --cols: 1fr 1fr;
+      }
+      @media (--pageFooterSml) {
+        --cols: 1fr;
+        gap: 0;
+        --stroke: 1px solid var(--colorVeryLightGrey);
+        border-top: var(--stroke);
+        .-group {
+          --contentRows: 0fr;
+          --titlePadY: 20px;
+          --titlePadTop: var(--titlePadY);
+          border-bottom: var(--stroke);
+          &.-is-open {
+            --iconVertDisplay: none;
+            --contentRows: 1fr;
+            --titlePadTop: 35px;
+          }
+          .-title {
+            @mixin center-frame;
+            @mixin pad-y var(--titlePadTop), var(--titlePadY);
+            --iconDisplay: inline-block;
+            text-transform: uppercase;
+            font-size: 15px;
+            transition: padding-top 0.3s var(--transitionSlowFastSlow);
+          }
+          .-links {
+            @mixin center-frame;
+            display: grid;
+            grid-template-rows: var(--contentRows);
+            transition: grid-template-rows 0.3s var(--transitionSlowFastSlow);
+            .-links-inner {
+              overflow: hidden;
+              padding: 0;
+              .-height {
+                padding-bottom: 30px;
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  .acknowledgement {
+    [class^='center-frame'] {
+      display: flex;
+      flex-wrap: wrap;
+      margin: 0 -10px 30px -10px;
+      text-align: center;
+      .flag {
+        padding: 0 10px;
+      }
+      .message {
+        flex: 1;
+        font-size: 12px;
+        line-height: 1.5em;
+        padding: 0 10px;
+      }
+    }
+  }
+  .lower {
+    padding-bottom: 15px;
+    padding-top: 15px;
+    > [class^='center-frame'] {
+      display: flex;
+      flex-wrap: wrap;
+    }
+    a {
+      &:hover {
+        color: var(--brandOrange);
+      }
+    }
+    .socials,
+    .legals,
+    .notices {
+      padding: 15px 15px;
+      &:first-child {
+        padding-left: 0;
+      }
+      &:last-child {
+        padding-right: 0;
+      }
+      ul {
+        display: flex;
+        margin: 0 -15px;
+        li {
+          padding: 0 15px;
+        }
+      }
+    }
+    .legals,
+    .notices {
+      line-height: 18px;
+      padding-bottom: 20px;
+      padding-top: 20px;
+    }
+    .socials {
+      display: flex;
+      ul {
+        margin: 0 -8px;
+        li {
+          padding: 0 8px;
+        }
+      }
+      a {
+        background: var(--colorDarkGrey);
+        transition: background-color 0.2s;
+        border-radius: 4px;
+        color: var(--colorWhite);
+        display: flex;
+        place-items: center;
+        height: 28px;
+        overflow: hidden;
+        padding: 6px;
+        width: 28px;
+        &:hover {
+          background: var(--brandOrange);
+        }
+      }
+    }
+    .notices {
+      flex: 1;
+      text-align: right;
+      ul {
+        justify-content: flex-end;
+        margin: 0 -3px;
+        li {
+          padding: 0 3px;
+        }
+      }
+      a {
+        color: var(--brandOrange);
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+  @media (--pageFooterSml) {
+    .lower {
+      .center-frame {
+        flex-direction: column;
+        .socials,
+        .legals,
+        .notices {
+          padding: 15px 0;
+          text-align: left;
+        }
+        .notices {
+          ul {
+            flex-direction: column;
+          }
+        }
+      }
+    }
+  }
+}
+
+.footer__newsletter-img {
+  width: 260px !important;
+  height: 260px;
+  @media screen and (min-width: 1024px) {
+    width: 434px !important;
+    height: 428px;
+  }
+}
+
+.risk-13-wcag {
+  color: var(--colorBlack);
+  text-decoration: underline;
+  text-underline-position: under;
+  text-underline-offset: -4px;
+  text-decoration-thickness: 4px;
+  text-decoration-color: var(--brandOrange);
+  &:hover {
+    opacity: 1;
+    color: var(--brandTealSeaweed);
+  }
+}

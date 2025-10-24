@@ -1,0 +1,143 @@
+
+
+:root {
+  --frameGutterMobile: 7vw;
+  --halfCenterFrameWidth: 550px; /* 1100 */
+  --halfCenterFrameWidthWide: 850px; /* 1700 */
+  --sectionPadYFactor: 8;
+  --wpTopBarHeight: 0;
+}
+.customize-support {
+  --wpTopBarHeight: 32px;
+  @media (max-width: 782px) {
+    --wpTopBarHeight: 46px;
+  }
+}
+body:not(.initialized) {
+  --bodyNotInitializedOpacity0: 0;
+}
+#wrapper {
+  padding-top: var(--topNavHeight);
+}
+
+@define-mixin page-gutter-left {
+  padding-left: clamp(var(--frameGutterMobile), 50vw - var(--halfCenterFrameWidth), 50vw);
+}
+@define-mixin page-gutter-right {
+  padding-right: clamp(var(--frameGutterMobile), 50vw - var(--halfCenterFrameWidth), 50vw);
+}
+@define-mixin page-gutter-wide-left {
+  padding-left: clamp(var(--frameGutterMobile), 50vw - var(--halfCenterFrameWidthWide), 50vw);
+}
+@define-mixin page-gutter-wide-right {
+  padding-right: clamp(var(--frameGutterMobile), 50vw - var(--halfCenterFrameWidthWide), 50vw);
+}
+
+.page-gutter-left {
+  @mixin page-gutter-left;
+}
+.page-gutter-right {
+  @mixin page-gutter-right;
+}
+.page-gutter-wide-left {
+  @mixin page-gutter-wide-left;
+}
+.page-gutter-wide-right {
+  @mixin page-gutter-wide-right;
+}
+
+@define-mixin center-frame {
+  @mixin page-gutter-left;
+  @mixin page-gutter-right;
+  width: 100%;
+}
+.center-frame {
+  @mixin center-frame;
+}
+
+@define-mixin center-frame-wide {
+  @mixin center-frame;
+  --halfCenterFrameWidth: var(--halfCenterFrameWidthWide);
+}
+.center-frame-wide {
+  @mixin center-frame-wide;
+}
+
+@define-mixin section-pad-y {
+  padding-top: clamp(var(--sectionPadTopFactor, var(--sectionPadYFactor)) * 4px, var(--sectionPadTopFactor, var(--sectionPadYFactor)) * 1vw, var(--sectionPadTopFactor, var(--sectionPadYFactor)) * 15px);
+  padding-bottom: clamp(var(--sectionPadBottomFactor, var(--sectionPadYFactor)) * 4px, var(--sectionPadBottomFactor, var(--sectionPadYFactor)) * 1vw, var(--sectionPadBottomFactor, var(--sectionPadYFactor)) * 15px);
+}
+.section-pad-y {
+  @mixin section-pad-y;
+}
+
+.bg-off-white {
+  --bgColor: var(--colorOffWhite);
+  --curveColor: var(--colorOffWhite);
+	background: var(--bgColor);
+}
+
+.bg-white {
+  --bgColor: var(--colorWhite);
+  --curveColor: var(--colorWhite);
+	background: var(--bgColor);
+}
+
+@define-mixin edge-curve-top {
+  bottom: 100%;
+  left: 0;
+  margin-bottom: -3px;
+  pointer-events: none;
+  position: absolute;
+  width: 100%;
+  z-index: 10;
+}
+@define-mixin edge-curve-bottom {
+  bottom: -1px;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  width: 100%;
+}
+.edge-curve {
+  svg {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: auto;
+  }
+}
+
+.curve-top {
+  position: relative;
+  .edge-curve {
+    @mixin edge-curve-top;
+  }
+}
+
+@define-mixin dead-center {
+  transform: translate(-50%, -50%);
+  left: 50%;
+  position: absolute;
+  top: 50%;
+}
+
+.section-grid-cols-3 + .block-testimonials {
+  margin-top: 120px;
+}
+
+.background-grey {
+  background-color: var(--colorOffWhite);
+}
+.block-video-content-alt {
+  padding: 6rem 0 4rem;
+}
+
+section.padded {
+  padding-bottom: 90px;
+}
+
+.bg-white+.curve-top {
+  margin-top: 5%;
+}

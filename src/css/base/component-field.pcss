@@ -1,0 +1,53 @@
+
+
+.component-field {
+  position: relative;
+  --fieldBorderColor: var(--formFieldBorder);
+  &.-has-err {
+    --fieldBorderColor: var(--formFieldBorderError);
+  }
+  &:focus-within {
+    --fieldBorderColor: var(--formFieldBorderActive);
+    .parsley-errors-list {
+      opacity: 0;
+    }
+  }
+  .-field {
+    border: 1px solid var(--fieldBorderColor);
+    border-radius: var(--inputBorderRadius);
+    height: 54px;
+    background-color: #fff;
+    position: relative;
+    [type='email'], [type='text'], [type='tel'], [type='url'], [type='password'], [type='date'], [type='number'], &.-checkbox, &.-radio {
+      width: 100%;
+      height: 100%;
+      border: none;
+      outline: none !important;
+      background-color: transparent;
+      [lang='ar'] & {
+        text-align: right;
+      }
+    }
+    /* .select-sml {
+      left: -1px;
+      top: -1px;
+      width: calc(100% + 2px);
+    } */
+  }
+  &.-field-textarea {
+    .-field {
+      height: auto;
+      border: none;
+    }
+  }
+  &.-field-select {
+    .-field {
+      border: none;
+    }
+  }
+  .-err {
+    font-weight: 400;
+    margin: 0 !important;
+    line-height: 1.2;
+  }
+}

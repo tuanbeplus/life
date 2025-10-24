@@ -1,0 +1,133 @@
+
+.hero-banner-sml {
+  position: relative;
+  background-color: var(--brandPastelGreen);
+  --titleTextAlign: center;
+  --titleColor: var(--brandGreen);
+  --titleMargin: 0 auto;
+  &.-is-post {
+    --titleTextAlign: left;
+    --titleMargin: 0;
+  }
+  &.-has-image {
+    --titleColor: #fff;
+  }
+  .-bg {
+    @mixin inset-abs;
+    bottom: auto;
+    height: 100%;
+    overflow: visible;
+    img {
+      animation: parallax linear;
+      animation-timeline: scroll();
+      object-fit: cover;
+      display: block;
+      position: relative;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+  }
+  .-text {
+    @mixin center-frame;
+    z-index: 3;
+    position: relative;
+    padding-top: clamp(80px, 16vh, 180px);
+    padding-bottom: calc(4vw + 20px);
+    .-bottom-pos {
+      display: flex;
+      align-items: flex-end;
+      min-height: clamp(100px, 2vh, 180px);
+      h1, h2 {
+        max-width: 860px;
+        width: 100%;
+        font-weight: 500;
+        margin: var(--titleMargin);
+        text-align: var(--titleTextAlign);
+        color: var(--titleColor);
+        text-wrap: pretty;
+        em {
+          color: var(--brandOrange);
+        }
+      }
+    }
+  }
+  + *, + * + *, + * + * + * {
+    position: relative;
+    z-index: 2;
+  }
+}
+
+#page-title {
+  position: relative;
+  &.has-hero {
+    background: var(--colorDarkGrey);
+    color: var(--colorWhite);
+    overflow: hidden;
+    h1,
+    h2 {
+      padding: 30px var(--page-gutter-width);
+      z-index: 10;
+      position: relative;
+      em {
+        color: var(--colorWhite);
+        text-decoration: none;
+      }
+    }
+  }
+  h1,
+  h2 {
+    max-width: 860px;
+    width: 100%;
+  }
+  .background {
+    min-height: 200px;
+    padding-top: 25%;
+    position: relative;
+    width: 100%;
+    z-index: 1;
+    img {
+      object-fit: cover;
+      width: 100%;
+      height: 100%;
+    }
+  }
+  .-text {
+    @mixin center-frame;
+    z-index: 3;
+    position: relative;
+    padding-top: clamp(100px, 21vh, 180px);
+    padding-bottom: calc(4vw + 20px);
+    .-bottom-pos {
+      display: flex;
+      align-items: flex-end;
+      min-height: clamp(100px, 2vh, 180px);
+      h1, h2 {
+        max-width: 860px;
+        width: 100%;
+        font-weight: 500;
+        margin: var(--titleMargin);
+        text-align: var(--titleTextAlign);
+        color: var(--titleColor);
+      }
+    }
+  }
+  &.-not-post {
+    @mixin pad-y 100px;
+    h1,
+    h2 {
+      text-align: center;
+      margin: 0 auto;
+    }
+    &.has-hero {
+      padding: 0;
+    }
+  }
+  &.-is-post {
+    padding-top: clamp(90px, 23vh, 160px);
+    padding-bottom: clamp(85px, 18vh, 110px);
+    &.has-hero {
+      padding: 0;
+    }
+  }
+}

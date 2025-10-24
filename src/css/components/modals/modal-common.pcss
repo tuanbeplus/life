@@ -1,0 +1,39 @@
+
+
+.modal {
+  --padY: clamp(25px, 8vh, 60px);
+  --padLeft: clamp(40px, 5vw, 65px);
+  --padRight: var(--padLeft);
+  --pad: var(--padY) var(--padLeft) var(--padY) var(--padRight);
+  &.-contact-facilitator-eoi,
+  &.-contact-gestational,
+  &.-contact-pcos,
+  {
+    --padLeft: clamp(35px, 5vw, 65px);
+    --padRight: clamp(35px, 5vw, 65px);
+  }
+  .-expanding {
+    background-color: #fff;
+    transition: height 0.5s var(--transitionSlowFastSlow);
+    .-padded {
+      padding: var(--pad);
+      h2 {
+        color: #1e9eb6;
+        font-size: clamp(30px, 3vw, 45px);
+        font-weight: 700;
+        margin-top: 3px;
+        margin-bottom: 35px;
+        em {
+          color: var(--colorBlack);
+        }
+      }
+    }
+  }
+  @media (max-width: 800px) {
+    &[data-lang='ar'] {
+      --pad: 80px var(--padLeft) var(--padY) var(--padRight);
+    }
+  }
+}
+
+

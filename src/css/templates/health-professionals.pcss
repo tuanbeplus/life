@@ -1,0 +1,33 @@
+.template-health-professionals {
+  .giant-tabs {
+    padding-bottom: clamp(50px, 5vw, 80px);
+  }
+  .health-professionals-content {
+    section.content {
+      padding-bottom: 50px;
+    }
+    .tab-togglers {
+      padding-top: 50px;
+    }
+    .related-resource-cta {
+      margin-top: 45px;
+    }
+    .secondary-content {
+      padding-bottom: 80px;
+      padding-top: 80px;
+    }
+    .tertiary-content {
+      padding-bottom: 90px;
+      padding-top: 90px;
+    }
+  }
+  .secondary-content {
+    &.curve-top {
+      .edge-curve {
+        + * {
+          padding-top: 80px;
+        }
+      }
+    }
+  }
+}

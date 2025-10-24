@@ -1,0 +1,11 @@
+{
+  "app.js": {
+    "file": "assets/app-DGp_CgkA.js",
+    "name": "app",
+    "src": "app.js",
+    "isEntry": true,
+    "css": [
+      "assets/app-CuDRbQ38.css"
+    ]
+  }
+}

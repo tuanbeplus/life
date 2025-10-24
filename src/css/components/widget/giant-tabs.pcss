@@ -1,0 +1,125 @@
+
+.content-tabs-tabs {
+  .-tabtab-panes {
+    .-pane {
+      display: none;
+      &.-current {
+        display: block;
+      }
+    }
+  }
+  &.-sml-tabs-grey {
+    --cTabsButtonBg: var(--colorOffWhite);
+  }
+}
+
+.inner-giant-tabs {
+  padding-top: 30px;
+  > .intro {
+    margin-bottom: 40px;
+    .icon-feature {
+      margin-bottom: 15px;
+      text-align: center;
+      .icon {
+        height: 45px;
+        width: 65px;
+      }
+    }
+  }
+  .-content-port {
+    position: relative;
+    height: var(--desktopGiantTabContentHeight);
+    .-slot {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      pointer-events: none;
+      opacity: 0;
+      --firstLineLeft: auto;
+      --firstLineRight: 50%;
+      --firstLineTransform: none;
+      &:last-child {
+        --firstLineRight: auto;
+        --firstLineLeft: 50%;
+        --firstLineTransform: scaleX(-1);
+      }
+      &.-current {
+        pointer-events: auto;
+        opacity: 1;
+      }
+    }
+  }
+}
+
+
+.giant-tabs {
+  &:not(.no-separator) {
+    ul {
+      display: flex;
+      flex-wrap: wrap;
+      .-separator {
+        font-size: 26px;
+        font-weight: 700;
+        pointer-events: none;
+        text-align: center;
+        flex: 0 0 auto;
+        display: grid;
+        place-items: center;
+      }
+    }
+  }
+  ul {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 25px 50px;
+    /* padding-top: 25px; */
+    > li {
+      cursor: pointer;
+      flex: 1;
+      position: relative;
+      text-align: center;
+      > .inner {
+        transition: all 0.2s;
+        background: var(--colorWhite);
+        border: 1px solid var(--brandOrange40);
+        border-radius: 14px;
+        height: 100%;
+        padding: 30px 30px 36px 30px;
+        .content {
+          p {
+            text-wrap: balance;
+          }
+        }
+        &:hover,
+        &.active {
+          background: var(--brandOrange);
+          border-color: var(--brandOrange);
+          color: var(--colorBlack);
+          .content {
+            color: var(--colorBlack);
+          }
+        }
+      }
+    }
+    .inner {
+      h4 {
+        margin-bottom: 4px;
+      }
+    }
+    .content {
+      font-size: 15px;
+      margin-top: 12px;
+    }
+  }
+  @media (max-width: 1023px) {
+    ul {
+      flex-direction: column;
+      > li {
+        width: 100%;
+      }
+    }
+  }
+}

@@ -1,0 +1,28 @@
+
+.listing.search-results {
+  display: flex;
+  flex-wrap: wrap;
+  margin: -10px;
+  > li {
+    padding: 10px;
+    width: 100%;
+    > .inner {
+      height: 100%;
+      padding: 20px 0 20px 0;
+      position: relative;
+    }
+  }
+  .title {
+    margin-bottom: 15px;
+  }
+  .summary {
+    display: -webkit-box;
+    line-clamp: 5;
+    overflow: hidden;
+    -webkit-box-orient: vertical; 
+    -webkit-line-clamp: 2;
+  }
+  .view-more {
+    margin-top: 20px;
+  }
+}

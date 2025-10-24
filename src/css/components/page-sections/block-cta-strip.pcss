@@ -1,0 +1,102 @@
+
+
+.block-cta-strip {
+  padding-bottom: 110px;
+  padding-top: 90px;
+  position: relative;
+  &[data-scroll-trigger] {
+    &:not(.trigger-complete) {
+      &.triggered {
+        .listing.ctas {
+          > li {
+            .graphic, .title, .content, .link {
+              opacity: 1;
+            }
+          }
+        }
+      }
+      .listing.ctas {
+        > li {
+          .graphic, .title, .content, .link {
+            transition: opacity 0.2s;
+            /* opacity: 0; */
+          }
+          &:nth-child(6n+1) {
+            .graphic { transition-delay: 100ms; }
+            .title { transition-delay: 150ms; }
+            .content { transition-delay: 200ms; }
+            .link { transition-delay: 250ms; }
+          }
+          &:nth-child(6n+2) {
+            .graphic { transition-delay: 200ms; }
+            .title { transition-delay: 250ms; }
+            .content { transition-delay: 300ms; }
+            .link { transition-delay: 350ms; }
+          }
+          &:nth-child(6n+3) {
+            .graphic { transition-delay: 300ms; }
+            .title { transition-delay: 350ms; }
+            .content { transition-delay: 400ms; }
+            .link { transition-delay: 450ms; }
+          }
+          &:nth-child(6n+4) {
+            .graphic { transition-delay: 400ms; }
+            .title { transition-delay: 450ms; }
+            .content { transition-delay: 500ms; }
+            .link { transition-delay: 550ms; }
+          }
+          &:nth-child(6n+5) {
+            .graphic { transition-delay: 500ms; }
+            .title { transition-delay: 550ms; }
+            .content { transition-delay: 600ms; }
+            .link { transition-delay: 650ms; }
+          }
+          &:nth-child(6n) {
+            .graphic { transition-delay: 600ms; }
+            .title { transition-delay: 650ms; }
+            .content { transition-delay: 700ms; }
+            .link { transition-delay: 750ms; }
+          }
+        }
+      }
+    }
+  }
+}
+
+.listing.ctas {
+  display: grid;
+  --ctasGridCols: 1fr 1fr 1fr;
+  grid-template-columns: var(--ctasGridCols);
+  @media (max-width: 1200px) {
+    --ctasGridCols: 1fr;
+  }
+  > li {
+    padding: 25px 25px 90px 25px;
+    position: relative;
+    &.no-cta {
+      padding-bottom: 25px;
+    }
+  }
+  + .supporting {
+    margin: 50px auto 0 auto;
+    max-width: 820px;
+  }
+  .graphic {
+    margin-bottom: 25px;
+    .icon {
+      height: 44px;
+      width: 66px;
+    }
+  }
+  h3 {
+    margin-bottom: 15px;
+  }
+  .link {
+    bottom: 25px;
+    left: 0;
+    padding: 0 25px;
+    position: absolute;
+    width: 100%;
+  }
+}
+

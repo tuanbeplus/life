@@ -1,0 +1,146 @@
+
+
+.contact-form {
+  @mixin inset-abs;
+  opacity: var(--contactFormOpacity);
+  transition: opacity 0.6s;
+  padding: var(--pad);
+  .-inner {
+    padding-bottom: 50px;
+  }
+}
+.contact-form-fields {
+  margin-top: 20px;
+  --buttonWidth: auto;
+  --buttonMinWidth: calc(33% - 8px);
+  --cols: 1fr 1fr;
+  --spanDefault: 1;
+  --spanFull: 2;
+  &.-cols4 {
+    --cols: 1fr 1fr 1fr 1fr;
+    --spanDefault: 2;
+    --spanQuarter: 1;
+    --spanFull: 4;
+  }
+  .-grid {
+    display: grid;
+    grid-template-columns: var(--cols);
+    gap: 20px;
+    [lang='ar'] & {
+      direction: rtl;
+    }
+    h4 {
+      margin: 38px 0 4px;
+      grid-column: span var(--spanFull);
+      &:first-child {
+        margin-top: 0;
+      }
+    }
+    .-spacer {
+      grid-column: span var(--spanFull);
+      height: 20px;
+    }
+    .-field {
+      grid-column: span var(--spanDefault);
+      &.-span-full {
+        grid-column: span var(--spanFull);
+      }
+      &.-span-half {
+        grid-column: span var(--spanHalf);
+      }
+      &.-span-quarter {
+        grid-column: span var(--spanQuarter);
+      }
+      &.-v-pad {
+        @mixin pad-y 10px;
+      }
+      &.-checkbox, &.-radio {
+        position: relative;
+        label {
+          display: flex;
+          gap: 20px;
+          --checkmarkOpacity: 0;
+          cursor: pointer;
+          &:has(input:checked) {
+            --checkmarkOpacity: 1;
+          }
+          .-cb {
+            width: 21px;
+            flex: 0 0 auto;
+            padding-top: 0.1em;
+            input {
+              display: none;
+            }
+            .-svg {
+              @mixin flex-center;
+              border: 1px solid var(--formFieldBorder);
+              width: 1.4em;
+              height: 1.4em;
+              svg {
+                opacity: var(--checkmarkOpacity);
+              }
+            }
+          }
+          .-label {
+            width: 100%;
+            flex: 0 1 auto;
+            user-select: none;
+            /* direction: var(--langDirection); */
+          }
+          [lang='ar'] & {
+            /* flex-direction: row-reverse; */
+            .-label {
+              font-size: 18px;
+            }
+          }
+        }
+      }
+      label {
+        margin: 0;
+        min-height: 30px;
+        display: block;
+        padding-bottom: 6px;
+        user-select: none;
+      }
+    }
+    .supporting {
+      font-size: 13px;
+      font-style: italic;
+      margin-top: 10px;
+    }
+    .-radios {
+      /* p {
+        margin-bottom: 0.7em;
+      } */
+      .-field {
+        margin-top: 14px;
+      }
+    }
+    &.-hide-placeholders {
+      --formFieldPlaceholder: transparent;
+    }
+  }
+  .-action {
+    display: flex;
+    [lang='ar'] & {
+      flex-direction: row-reverse;
+    }
+  }
+  @media (max-width: 950px) {
+    &.-cols4 {
+      --cols: 1fr 1fr;
+      --spanFull: 2;
+      --spanDefault: 2;
+      /* --spanQuarter: 1; */
+    }
+  }
+  @media (max-width: 680px) {
+    &, &.-cols4 {
+      --cols: 1fr;
+      --spanFull: 1;
+      --spanDefault: 1;
+    }
+  }
+}
+
+

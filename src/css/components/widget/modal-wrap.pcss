@@ -1,0 +1,92 @@
+html {
+  --modalXSize: 20px;
+  --modalXBg: #fff;
+  --modalXHoverColor: #000;
+  --modalXPosTop: 32px;
+  --modalXPosRight: 34px;
+  &[lang='ar'], &[lang='zh'], &[lang='vi'] {
+    --modalXSize: 40px;
+    --modalXBg: transparent;
+    --modalXHoverColor: var(--brandOrange);
+    --modalXPosTop: 15px;
+    --modalXPosRight: 15px;
+  }
+}
+
+.modal-wrap {
+  background: transparent;
+  outline: none;
+  border: none;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: 100dvh;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  pointer-events: none;
+  --boxOpacity: 0;
+  &.-open {
+    --boxOpacity: 1;
+    pointer-events: auto;
+    &::backdrop {
+      background-color: rgba(0,0,0,0.7); /* --backdropColor (NB. backdrop cannot inherit css variables) */
+    }
+  }
+  &::backdrop {
+    transition: background-color 0.3s linear;
+    background-color: rgba(0,0,0,0);
+  }
+  > div {
+    overflow: hidden scroll;
+    overscroll-behavior: contain;
+    --scrollBgColor: #eee;
+    --scrollThumbColor: #777;
+    scrollbar-color: var(--scrollThumbColor) var(--scrollBgColor);
+    background-color: #fff;
+    position: relative;
+    border-radius: 8px;
+    max-width: 830px;
+    width: 94vw;
+    opacity: var(--boxOpacity);
+    transition: opacity 0.3s;
+    max-height: calc(100dvh - 60px);
+    .-close {
+      position: absolute;
+      box-sizing: content-box;
+      width: var(--modalXSize);
+      height: var(--modalXSize);
+      border-radius: 50%;
+      background-color: var(--modalXBg);
+      padding: 11px;
+      top: var(--modalXPosTop);
+      right: var(--modalXPosRight);
+      cursor: pointer;
+      font-size: var(--modalXSize);
+      opacity: var(--boxOpacity);
+      z-index: 50;
+      color: #000;
+      transition: color 0.2s;
+      svg {
+        cursor: pointer;
+      }
+      &:hover {
+        color: var(--modalXHoverColor);
+      }
+    }
+    .-content {
+      min-height: 200px;
+      transition: height 0.3s ease;
+    }
+    &:focus-visible {
+      outline: none;
+    }
+  }
+}
+
+

@@ -1,0 +1,95 @@
+.wp-block-button.is-style-default .wp-block-button__link {
+    background: #85d7e9;
+    color: #151515;
+    border-radius: 12px;
+    transition: all .2s ease-in;
+    cursor: pointer;
+    display: inline-block;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 19px;
+    outline: none;
+    overflow: hidden;
+    padding: 17px 40px;
+    position: relative;
+    text-align: center;
+    text-transform: uppercase;
+    vertical-align: top;
+}
+
+.wp-block-button.is-style-default .wp-block-button__link:hover {
+    background: #04798f;
+    color: #151515;
+}
+
+.wp-block-button.is-style-orange-button .wp-block-button__link {
+    background: #f47b20;
+    color: #151515;
+    border-radius: 12px;
+    transition: all .2s ease-in;
+    cursor: pointer;
+    display: inline-block;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 19px;
+    outline: none;
+    overflow: hidden;
+    padding: 17px 40px;
+    position: relative;
+    text-align: center;
+    text-transform: uppercase;
+    vertical-align: top;
+}
+
+.wp-block-button.is-style-orange-button .wp-block-button__link:hover {
+    background: #d45b00;
+    color: #151515;
+}
+
+.wp-block-button.is-style-black-button .wp-block-button__link {
+    background: #000000;
+    color: #ffffff;
+    border-radius: 12px;
+    transition: all .2s ease-in;
+    cursor: pointer;
+    display: inline-block;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 19px;
+    outline: none;
+    overflow: hidden;
+    padding: 17px 40px;
+    position: relative;
+    text-align: center;
+    text-transform: uppercase;
+    vertical-align: top;
+}
+
+.wp-block-button.is-style-black-button .wp-block-button__link:hover {
+    background: #151515;
+    color: #ffffff;
+}
+
+.wp-block-button.is-style-grey-button .wp-block-button__link {
+    background: #3a3a3a;
+    color: #ffffff;
+    border-radius: 12px;
+    transition: all .2s ease-in;
+    cursor: pointer;
+    display: inline-block;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 19px;
+    outline: none;
+    overflow: hidden;
+    padding: 17px 40px;
+    position: relative;
+    text-align: center;
+    text-transform: uppercase;
+    vertical-align: top;
+}
+
+.wp-block-button.is-style-grey-button .wp-block-button__link:hover {
+    background: #151515;
+    color: #ffffff;
+}

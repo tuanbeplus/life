@@ -1,0 +1,82 @@
+
+.select-sml {
+  --height: 54px;
+  height: var(--height);
+  position: relative;
+  z-index: 10;
+  --dropOpacity: 0;
+  --dropPointerEvents: none;
+  --topBoxBg: var(--colorWhite);
+  --topBoxBorderColor: var(--formFieldBorder);
+  --chevRotate: rotate(0);
+  &.-is-open {
+    --dropOpacity: 1;
+    --dropPointerEvents: auto;
+    --topBoxBg: transparent;
+    --topBoxBorderColor: transparent;
+    --chevRotate: rotate(180deg);
+    z-index: 100;
+  }
+  --padX: 20px;
+  --padXHalf: calc(var(--padX) * 0.5);
+  .-drop {
+    position: absolute;
+    z-index: 110;
+    left: 0;
+    right: 0;
+    top: 0;
+    border-radius: var(--formFieldRadius);
+    border: 1px solid var(--formFieldBorderActive);
+    background-color: var(--colorWhite);
+    pointer-events: var(--dropPointerEvents);
+    opacity: var(--dropOpacity);
+    transition: opacity 0.2s;
+    padding-top: var(--height);
+    &::before {
+      @mixin margin-x var(--padX);
+      content: '';
+      display: block;
+      height: 8px;
+      border-top: var(--faintLine);
+    }
+    .-opts {
+      max-height: var(--maxSelectDropHeight, 222px);
+      overflow-y: auto;
+      padding: 0 var(--padXHalf) 8px;
+      overscroll-behavior: contain;
+      .-opt {
+        padding: 8px var(--padXHalf);
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 400;
+        color: var(--colorMidGrey);
+        &:hover {
+          background-color: var(--mainBgColor);
+          color: var(--colorBlack);
+        }
+      }
+    }
+  }
+  .-top-box {
+    @mixin inset-abs;
+    align-items: center;
+    background-color: var(--topBoxBg);
+    border: 1px solid var(--topBoxBorderColor);
+    border-radius: var(--formFieldRadius);
+    color: var(--colorMidGrey);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    padding: 4px var(--padX);
+    z-index: 120;
+    p {
+      margin: 2px 0 0;
+      font-size: 1rem;
+      font-weight: 400;
+    }
+    svg {
+      font-size: 20px;
+      transform: var(--chevRotate);
+    }
+  }
+}

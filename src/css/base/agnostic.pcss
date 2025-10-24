@@ -1,0 +1,73 @@
+
+
+@custom-selector :--input [type='text'], [type='email'], [type='password'], [type='date'], [type='number'];
+
+
+@define-mixin margin-x $l: auto {
+  margin-left: $l;
+  margin-right: $l;
+}
+@define-mixin margin-y $t, $b: $t {
+  margin-top: $t;
+  margin-bottom: $b;
+}
+
+@define-mixin pad-x $l, $r: $l {
+  padding-left: $l;
+  padding-right: $r;
+}
+@define-mixin pad-y $t, $b: $t {
+  padding-top: $t;
+  padding-bottom: $b;
+}
+
+
+
+
+@define-mixin inset $l: 0 {
+  top: $l;
+  right: $l;
+  bottom: $l;
+  left: $l;
+}
+@define-mixin inset-abs $l: 0 {
+  @mixin inset $l;
+  position: absolute;
+}
+@define-mixin inset-fixed $l: 0 {
+  @mixin inset $l;
+  position: fixed;
+}
+
+@define-mixin hide-scrollbar {
+  -ms-overflow-style: none; /* for Internet Explorer, Edge */
+  scrollbar-width: none; /* for Firefox */
+  &::-webkit-scrollbar {
+    display: none; /* for Chrome, Safari, and Opera */
+  }
+}
+.hide-scrollbar {
+  @mixin hide-scrollbar;
+}
+
+
+@define-mixin line-clamp $l {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: $l;
+  -webkit-box-orient: vertical;
+}
+
+.overflow-hidden {
+  overflow: hidden;
+}
+.display-none {
+  display: none !important;
+}
+
+@define-mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

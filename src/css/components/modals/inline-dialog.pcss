@@ -1,0 +1,134 @@
+
+
+dialog.inline-dialog-modal {
+  @mixin inset-fixed;
+  z-index: 1000;
+  padding: 0 clamp(20px, 50vw - 334px, 50vw);
+  background: transparent;
+  outline: none;
+  border: none;
+  overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
+  max-width: none;
+  --boxOpacity: 0;
+  --boxPosTop: 6px;
+  &::backdrop {
+    transition: background-color 0.3s linear;
+    background-color: rgba(0,0,0,0);
+  }
+  &.-open {
+    --boxOpacity: 1;
+    --boxPosTop: 0;
+    display: flex;
+    &::backdrop {
+      background-color: rgba(0,0,0,0.6); /* --backdropColor (NB. backdrop cannot inherit css variables) */
+    }
+  }
+  .-box {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: clamp(28px, 3.2vw, 46px);
+    background-color: #fff;
+    border-radius: 10px;
+    min-height: 200px;
+    max-height: 88vh;
+    width: 100%;
+    top: var(--boxPosTop);
+    opacity: var(--boxOpacity);
+    transition: opacity 0.3s linear, top 0.4s ease;
+    position: relative;
+    .-close {
+      position: absolute;
+      top: 26px;
+      right: 26px;
+      outline: none;
+      cursor: pointer;
+      width: 20px;
+    }
+    .-content {
+      .-text {
+        width: calc(100% + 10px);
+        h2, h3, h4 {
+          line-height: 1.4;
+        }
+        h2 {
+          font-size: clamp(18px, 2vw, 20px);
+          font-weight: 600;
+        }
+        h3 {
+          font-size: clamp(28px, 3.6vw, 36px);
+          font-weight: bold;
+          margin: 0.5em 0 0.2em;
+        }
+        p {
+          line-height: 1.6;
+        }
+        h4 {
+          color: #151515;
+          font-size: 17px;
+          font-weight: 600;
+          margin: 1.3em 0 1.2em;
+        }
+      }
+      .-links {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 16px;
+        .-link {
+          padding: 5px 20px;
+          height: 54px;
+          border-radius: 12px;
+          border: 1px solid #c7c7c7;
+          cursor: pointer;
+          background-color: #fff;
+          transition: all 0.3s linear;
+          outline: none;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          --shareCheckmarkDisplay: none;
+          --shareNotCheckmarkDisplay: flex;
+          &.-show-checkmark {
+            --shareCheckmarkDisplay: flex;
+            --shareNotCheckmarkDisplay: none;
+            border-color: #090 !important;
+            background-color: #d7ffd7 !important;
+          }
+          span, i {
+            color: var(--colorBlack);
+          }
+          svg {
+            width: auto;
+            &.share-circle-checkmark {
+              display: var(--shareCheckmarkDisplay);
+              --strokeWidth: 0.1em;
+              color: #090;
+            }
+            &:not(.share-circle-checkmark) {
+              display: var(--shareNotCheckmarkDisplay);
+            }
+          }
+          span {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 15px;
+            line-height: 1.4;
+            word-break: break-all;
+            &.-copied-text {
+              display: var(--shareCheckmarkDisplay);
+              color: #090;
+            }
+            &:not(.-copied-text) {
+              display: var(--shareNotCheckmarkDisplay);
+            }
+          }
+          &:hover {
+            background-color: var(--brandOrange);
+            border-color: var(--brandOrange);
+          }
+        }
+      }
+    }
+  }
+}

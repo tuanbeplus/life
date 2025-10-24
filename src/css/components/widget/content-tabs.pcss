@@ -1,0 +1,183 @@
+
+@custom-media --contentTabsLrg (min-width: 1024px);
+@custom-media --contentTabsNotSml (min-width: 768px);
+@custom-media --contentTabsMed (min-width: 768px) and (max-width: 1023px);
+@custom-media --contentTabsSml (max-width: 767px);
+
+.content-tabs {
+  --headNavGap: 20px;
+  --headNavMarginBottom: 60px;
+  --mobileAccordionHeadDisplay: none;
+  --tabContentPadTop: 0;
+  --slotOuterPosition: absolute;
+  --mobileAccordionHeadIconVert: block;
+  --tabsButtonWidth: var(--tabsButtonWidthDesktop, 100%);
+  > h2 {
+    font-weight: 700;
+    text-align: center;
+    padding-top: clamp(25px, 400px - 30vh, 85px);
+    margin-bottom: clamp(45px, 4vw, 60px);
+  }
+  .-head-nav {
+    display: var(--headNavDisplay);
+    flex-direction: var(--headNavFlexDirection, row);
+    justify-content: center;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--headNavGap);
+    margin-bottom: var(--headNavMarginBottom);
+    .-button {
+      width: var(--tabsButtonWidth);
+      flex: 0 1 auto;
+      .button {
+        @mixin pad-x 10px;
+        width: 100%;
+        background-color: var(--cTabsButtonBg, var(--colorWhite));
+        height: 100%;
+      }
+    }
+  }
+  &.-center-frame-head {
+    .-head-nav {
+      @mixin center-frame;
+    }
+  }
+  &.-sml-tabs-grey {
+    --cTabsButtonBg: var(--colorOffWhite);
+  }
+  &:not(.-single-tab) {
+    overflow: hidden;
+  }
+  @media (--contentTabsLrg) {
+    --headNavDisplay: flex;
+  }
+  .-content-window {
+    @mixin margin-x calc(var(--negativeMargin) * -0.5);
+    --negativeMargin: 300px;
+    width: calc(100% + var(--negativeMargin));
+    height: var(--desktopTabContentHeight);
+    transition: height 0.5s ease;
+    position: relative;
+    .-slot-outer {
+      --tabContentOpacity: 0;
+      --tabContentPostLeft: 0;
+      --mobileHeadGutter: 35px;
+      --mobileHeadBg: var(--colorWhite);
+      --mobileHeadText: var(--colorDarkGrey);
+      position: var(--slotOuterPosition);
+      left: var(--tabContentPostLeft);
+      top: 0;
+      right: 0;
+      width: calc(100% - var(--negativeMargin));
+      transition: left 0.4s var(--transitionSlowFastSlow);
+      pointer-events: none;
+      .-tab-content {
+        opacity: var(--tabContentOpacity);
+        transition: opacity 0.2s;
+        .-mobile-accordion-head {
+          display: var(--mobileAccordionHeadDisplay);
+          padding: 10px var(--mobileHeadGutter);
+          height: 60px;
+          width: 100%;
+          align-items: center;
+          justify-content: space-between;
+          background-color: var(--mobileHeadBg);
+          position: relative;
+          span {
+            color: var(--mobileHeadText);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 15px;
+          }
+          &::before, &::after {
+            position: absolute;
+            content: '';
+            display: block;
+            height: 2px;
+            right: var(--mobileHeadGutter);
+            top: 28px;
+            transform-origin: 50% 50%;
+            width: 16px;
+            background-color: var(--mobileHeadText);
+          }
+          &::after {
+            transform: rotate(90deg);
+            display: var(--mobileAccordionHeadIconVert);
+          }
+        }
+        .-height {
+          padding-top: var(--tabContentPadTop);
+        }
+      }
+      &.-current {
+        --tabContentOpacity: 1;
+        --tabContentPostLeft: calc(var(--negativeMargin) * 0.5);
+        pointer-events: auto;
+        --mobileHeadBg: var(--brandOrange);
+        --mobileHeadText: var(--colorWhite);
+      }
+      &.-left {
+        --tabContentPostLeft: 0;
+      }
+      &.-right {
+        --tabContentPostLeft: var(--negativeMargin);
+      }
+    }
+  }
+  @media (--contentTabsMed) {
+    overflow: hidden;
+    &.-tablet-head-nav-grid {
+      --headNavDisplay: grid;
+    }
+    &:not(.-tablet-head-nav-grid) {
+      --headNavDisplay: flex;
+    }
+  }
+  @media (--contentTabsSml) {
+    --headNavDisplay: flex;
+    --headNavFlexDirection: column;
+    --tabsButtonWidth: 100%;
+    --headNavGap: 10px;
+    --headNavMarginBottom: 34px;
+    --mobileAccordionHeadDisplay: flex;
+    &.-mobile-accordion {
+      --tabContentPadTop: 16px;
+      --slotOuterPosition: static;
+      .-head-nav {
+        display: none;
+      }
+      .-content-window {
+        @mixin margin-x 0;
+        height: auto;
+        .-slot-outer {
+          pointer-events: auto;
+          overflow: hidden;
+          --contentRows: 0fr;
+          &.-current {
+            --contentRows: 1fr;
+            --mobileAccordionHeadIconVert: none;
+          }
+          .-tab-content {
+            opacity: 1;
+            .-height {
+              display: grid;
+              grid-template-rows: var(--contentRows);
+              transition: grid-template-rows 0.4s var(--transitionSlowFastSlow);
+              padding-top: 0;
+              > * {
+                overflow: hidden;
+                padding: 1px 0;
+                &:first-child > :first-child {
+                  padding-top: var(--tabContentPadTop);
+                }
+                &:last-child > :last-child {
+                  margin-bottom: 60px;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+

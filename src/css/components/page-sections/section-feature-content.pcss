@@ -1,0 +1,95 @@
+
+.section-feature-content {
+  @mixin section-pad-y;
+  --sectionPadTopFactor: 10;
+  --sectionPadBottomFactor: 5;
+  position: relative;
+  z-index: 15;
+  display: flex;
+  &.-with-aside {
+    .-text, .-image {
+      width: 50%;
+      flex: 0 0 auto;
+    }
+    .-text {
+      @mixin page-gutter-left;
+      padding-right: clamp(50px, 5vw, 80px);
+    }
+  }
+  &:not(.-with-aside) {
+    .-text {
+      @mixin center-frame;
+    }
+  }
+  .-image {
+    @mixin page-gutter-right;
+    --halfCenterFrameWidth: var(--halfCenterFrameWidthWide);
+    .-container {
+      display: flex;
+      position: sticky;
+      top: 100px;
+      img {
+        display: block;
+        width: 100%;
+        max-width: 720px;
+      }
+      .-img-size {
+        position: relative;
+        .cta-links {
+          @mixin inset-abs;
+          align-items: center;
+          display: flex;
+          justify-content: center;
+          ul {
+            li {
+              a {
+                padding: 23px 50px;
+                span {
+                  font-size: 1.25rem;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    .cta-links {
+      @mixin inset-abs;
+      ul {
+        height: 100%;
+        display: flex;
+        gap: clamp(14px, 1.6vw, 24px);
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        li {
+          a {}
+        }
+      }
+    }
+  }
+  + .section-grid-cols-3 {
+    margin-top: 110px;
+  }
+  @media (max-width: 700px) {
+    flex-direction: column;
+    padding-bottom: 50px;
+    gap: 35px;
+    &, &.-with-aside {
+      .-text, .-image {
+        width: 100%;
+      }
+    }
+    .-image {
+      padding: 0;
+      .-container {
+        img {
+          margin: 0 auto;
+        }
+        .cta-links {
+          @mixin center-frame;
+        }
+      }
+    }
+  }
+}

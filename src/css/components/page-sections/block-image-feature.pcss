@@ -1,0 +1,53 @@
+
+.block-image-feature {
+  min-height: max(510px, 30vw);
+  position: relative;
+  background-color: #000;
+  overflow-x: clip;
+  &:not(.has-message) {
+    display: grid;
+    place-items: center;
+    [class^='center-frame'] {
+      padding: 50px;
+      position: absolute;
+      h2 {
+        padding-bottom: 60px;
+      }
+    }
+  }
+  [class^='center-frame'] {
+    @mixin pad-y 80px;
+    position: relative;
+    width: 100%;
+    z-index: 10;
+    h2 {
+      font-size: 46px;
+      font-weight: bold;
+      max-width: 470px;
+      a {
+        color: var(--colorWhite);
+        text-decoration: underline;
+        &:hover {
+          color: var(--brandOrange);
+        }
+      }
+    }
+    .message {
+      margin-top: 25px;
+      max-width: 360px;
+      padding-bottom: 80px;
+      p {
+        color: #fff;
+      }
+    }
+  }
+  .background {
+    height: 100%;
+    left: 0;
+    overflow: hidden;
+    position: absolute;
+    top: 0;
+    width: 101%;
+    z-index: 1;
+  }
+}

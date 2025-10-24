@@ -1,0 +1,120 @@
+
+@custom-media --contentWrapperNotSml (min-width: 1024px);
+@custom-media --contentWrapperSml (max-width: 1023px);
+
+.section-level2 {
+  &.-no-sidebar {
+    --contentGridColsDesktop: 1fr;
+  }
+  .content-wrapper {
+    padding-bottom: clamp(35px, 6vw, 80px);
+  }
+}
+
+section.content {
+  &.-pb-90 {
+    padding-bottom: clamp(45px, 6vw, 90px);
+  }
+}
+
+.main-content {
+  + .listing.ctas {
+    margin-top: 50px;
+  }
+  .download-document {
+    border-bottom: 1px solid var(--colorUltralightGrey);
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    text-align: right;
+  }
+}
+
+.content {
+  > .inner {
+    > .download-document {
+      border-top: 1px solid var(--colorUltralightGrey);
+      margin-top: 45px;
+      padding-top: 45px;
+    }
+  }
+}
+
+.content-wrapper {
+  display: grid;
+  gap: 60px;
+  grid-template-columns: var(--contentGridColsDesktop, 1fr 340px);
+  padding-bottom: clamp(80px, 12vw, 140px);
+  @media (--contentWrapperSml) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.content-sidebar {
+  .blocks {
+    position: relative;
+    width: 100%;
+    > li {
+      transition: opacity 0.2s;
+      opacity: 0;
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 100%;
+      z-index: 1;
+      &.current {
+        opacity: 1;
+        position: relative;
+        z-index: 10;
+      }
+    }
+  }
+  @media (--contentWrapperSml) {
+    height: 250px;
+    /* .blocks {
+      display: grid;
+      gap: 20px;
+      > li {
+        opacity: 1;
+        position: relative;
+      }
+    } */
+  }
+}
+
+.download-document {
+  line-height: 1.4em;
+  a {
+    display: inline-block;
+    position: relative;
+    padding-left: 30px;
+  }
+  .icon {
+    height: 16px;
+    left: 0;
+    margin-right: 9px;
+    position: absolute;
+    top: 2px;
+    width: 16px;
+  }
+}
+
+.recipe-details {
+  display: flex;
+  padding-top: 45px;
+  gap: 45px;
+  .recipe-ingredients {
+    width: 300px;
+  }
+  .recipe-method {
+    flex: 1;
+  }
+  @media (max-width: 800px) {
+    flex-direction: column;
+    .recipe-ingredients {
+      width: 100%;
+    }
+    .recipe-method {
+      padding-left: 0;
+    }
+  }
+}

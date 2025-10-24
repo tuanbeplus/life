@@ -1,0 +1,91 @@
+
+.top-nav-search {
+  transition: opacity 0.2s;
+  left: 0;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  z-index: 50;
+  width: 100%;
+  &.visible {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .inner {
+    background: #fff;
+    height: 50vh;
+    max-height: 340px;
+    position: relative;
+    z-index: 10;
+    display: grid;
+    place-items: center;
+    form {
+      max-width: 800px;
+      width: 90vw;
+      z-index: 10;
+      align-items: center;
+      position: relative;
+      input {
+        border-bottom: var(--strokeLight);
+        border-radius: 0;
+        font-size: 30px;
+        line-height: 40px;
+        padding: 10px 60px 10px 10px;
+      }
+      label {
+        font-size: 30px;
+        left: 10px;
+      }
+      button {
+        position: absolute;
+        height: 60px;
+        padding: 15px;
+        right: 0;
+        top: 0;
+        font-size: 30px;
+        --magnifyIconStroke: 1.2px;
+        &:hover {
+          color: var(--brandOrange);
+        }
+      }
+    }
+  }
+  .mask {
+    background: rgba(0, 0, 0, 0.3);
+    height: 100vh;
+    left: 0;
+    position: absolute;
+    top: 0;
+    width: 100%;
+    z-index: 1;
+  }
+  .close-search {
+    padding: 10px;
+    position: absolute;
+    right: 30px;
+    top: 20px;
+    color: #231F20;
+    font-size: 20px;
+  }
+}
+
+.top-nav-search-trigger {
+  bottom: 10px;
+  height: 100%;
+  right: -10px;
+  width: 36px;
+  button {
+    height: 100%;
+    width: 100%;
+    padding: 10px 10px 5px;
+    background-color: transparent;
+    svg {
+      width: 1.3em;
+      height: 1.3em;
+    }
+    &:hover {
+      color: var(--brandOrange);
+    }
+  }
+}

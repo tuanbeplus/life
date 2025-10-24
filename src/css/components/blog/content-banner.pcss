@@ -1,0 +1,115 @@
+
+
+.content-banner {
+  --padY: clamp(35px, 4.5vw, 72px);
+  --padX: clamp(30px, 6.125vw, 98px);
+  --borderRadius: clamp(14px, 1.25vw, 20px);
+  margin: clamp(50px, 5vw, 80px) 0;
+  border-radius: var(--borderRadius);
+  background-color: #fff;
+  border: 2px solid #e5e5e5;
+  box-shadow: 0 4px 50px rgba(0, 0, 0, 0.1);
+  .-eyebrow-heading {
+    font-size: 15px;
+    text-transform: uppercase;
+    margin: 0 0 1.8em;
+    line-height: 1.3;
+  }
+  blockquote {
+    font-size: clamp(20px, 2.2vw, 30px);
+    margin: 0 auto 1em;
+    max-width: 1048px;
+    p {
+      margin: 0 0 0.3em;
+      svg {
+        color: var(--brandMidGreen);
+        width: auto;
+        height: auto;
+        position: relative;
+        &:first-child {
+          top: -0.4em;
+          left: -0.1em;
+        }
+        &:last-child {
+          top: -0.3em;
+          right: -0.1em;
+        }
+      }
+      span {
+        font-weight: 400;
+        line-height: 1.6;
+      }
+    }
+    cite {
+      font-size: 16px;
+    }
+  }
+  .-large-heading {
+    font-size: clamp(20px, 3.14vw, 44px);
+    line-height: 1.2;
+    margin: 0 0 0.55em;
+  }
+  .-button {
+    display: flex;
+    padding-top: clamp(10px, 1vw, 16px);
+    a {
+      display: inline-block;
+    }
+  }
+  &.-centered-quote {
+    padding: var(--padY) var(--padX);
+    text-align: center;
+    .-button {
+      justify-content: center;
+    }
+  }
+  &.-half-image {
+    display: flex;
+    .-text {
+      flex: 0 1 auto;
+      width: 100%;
+      min-width: 550px;
+      padding: var(--padY) 20px var(--padY) var(--padX);
+      .-button {
+        justify-content: flex-start;
+        padding-bottom: 25px;
+      }
+    }
+    .-image {
+      flex: 0 1 auto;
+      width: 100%;
+      img {
+        display: block;
+        border-radius: 0 var(--borderRadius) var(--borderRadius) 0;
+        margin: -2px -2px -2px 0;
+        width: calc(100% + 2px);
+        height: calc(100% + 4px);
+        object-fit: cover;
+      }
+    }
+  }
+  @media (max-width: 1200px) {
+    &.-half-image {
+      flex-direction: column-reverse;
+      .-text, .-image {
+        width: 100%;
+        min-width: 0;
+      }
+      .-image {
+        height: 60vw;
+        img {
+          border-radius: var(--borderRadius) var(--borderRadius) 0 0;
+        }
+      }
+      .-text {
+        padding: var(--padY) var(--padX);
+        text-align: center;
+        .-button {
+          padding: 16px 0 4px;
+          justify-content: center;
+        }
+      }
+    }
+  }
+}
+

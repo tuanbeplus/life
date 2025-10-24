@@ -1,0 +1,66 @@
+
+.tinted {
+  overflow: hidden;
+  position: relative;
+  &:before {
+    content: "";
+    height: 100%;
+    left: 0;
+    opacity: 0.3;
+    position: absolute;
+    top: 0;
+    width: 100%;
+    z-index: 2;
+  }
+  &.darker {
+    &:before {
+      opacity: 0.45;
+    }
+  }
+  &.even-darker {
+    &:before {
+      opacity: 0.55;
+    }
+  }
+  &.tint-bottom {
+    &:after {
+      bottom: 0;
+      content: "";
+      height: 50%;
+      left: 0;
+      max-height: 300px;
+      opacity: 0.65;
+      position: absolute;
+      width: 100%;
+      z-index: 2;
+    }
+  }
+  &.tint-left {
+    &:after {
+      bottom: 0;
+      content: "";
+      height: 100%;
+      left: 0;
+      max-height: 300px;
+      opacity: 0.25;
+      position: absolute;
+      width: 50%;
+      z-index: 2;
+    }
+  }
+  &.tint-black {
+    &:before {
+      background: #000;
+    }
+    &.tint-bottom {
+      &:after {
+        background: linear-gradient(to bottom, rgba(199,188,174,0) 0%,rgba(0,0,0,1) 100%);
+      }
+    }
+    &.tint-left {
+      &:after {
+        background: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%);
+      }
+    }
+  }
+}

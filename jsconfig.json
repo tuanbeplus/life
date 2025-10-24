@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "target": "es6",
+    "paths": {
+      "@/*": ["./src/js/*"],
+      "~/*": ["./src/js/components/*"],
+      "#/*": ["./src/js/composables/*"],
+    }
+  },
+  "exclude": [
+    "./.vscode",
+    "./node_modules",
+    "./public",
+    "./acf-json",
+    "./emails",
+    "./genericons",
+    "./images",
+    "./inc",
+    "./page-templates",
+    "./partials",
+    "./svgs",
+  ]
+}

@@ -1,0 +1,141 @@
+
+
+.opt-label {
+  font-size: 16px;
+  display: flex;
+  gap: 1em;
+  .-flag {
+    border-radius: 99px;
+    overflow: hidden;
+    --size: 1em;
+    width: var(--size);
+    height: var(--size);
+    img {
+      width: 100%;
+      height: 100%;
+    }
+  }
+}
+
+.top-nav-lang-selector {
+  --dropPos: 0;
+  --dropOpacity: 0;
+  --dropPointerEvents: none;
+  --chevRotation: none;
+  .lang-select-field-small {
+    position: relative;
+    border-radius: 5px;
+    background-color: var(--bgColor);
+    height: 50px;
+    .-head {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      height: 100%;
+      cursor: pointer;
+      svg {
+        display: inline-block;
+        opacity: var(--globeIconOpacity);
+        font-size: 15px;
+      }
+      .-text {
+        transition: color 0.2s;
+      }
+      .-chev {
+        width: 12px;
+        transform: var(--chevRotation);
+        svg {
+          width: 100%;
+          opacity: 1;
+        }
+      }
+    }
+    .-drop {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      width: 220px;
+      opacity: var(--dropOpacity);
+      transition: opacity 0.2s;
+      pointer-events: var(--dropPointerEvents);
+      z-index: 100;
+      > div {
+        position: absolute;
+        right: 0;
+        top: var(--dropPos);
+        transition: top 0.3s ease;
+        width: 100%;
+        padding: 6px 0;
+        background-color: #fff;
+        border: 1px solid #000;
+        border-radius: 6px;
+        .-opt {
+          padding: 14px 16px;
+          background-color: #fff;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          cursor: pointer;
+          transition: background-color 0.2s;
+          .opt-label {
+            .-text {
+              font-size: 17px;
+              font-weight: normal;
+            }
+          }
+          svg {
+            font-size: 15px;
+          }
+          /* img {
+            width: 20px;
+          } */
+          &:hover {
+            background-color: rgba(0,0,0,0.05);
+          }
+        }
+      }
+    }
+  }
+  &.-is-open {
+    --dropPos: 10px;
+    --dropOpacity: 1;
+    --dropPointerEvents: auto;
+    --chevRotation: rotate(180deg);
+  }
+  &.-desktop {
+    --globeIconOpacity: 0.6;
+    .lang-select-field-small {
+      .-head {
+        padding: 10px 4px 10px 4px;
+        img {
+          width: 20px;
+        }
+      }
+      .-drop {
+        > div {
+          padding: 9px;
+          .-opt {
+            border-radius: 3px;
+            padding: 7px 8px;
+          }
+        }
+      }
+    }
+  }
+  &.-mobile {
+    --bgColor: #fff;
+    --globeIconOpacity: 0.4;
+    .lang-select-field-small {
+      .-head {
+        padding: 10px var(--padX);
+        img {
+          width: 24px;
+        }
+      }
+    }
+    &.-is-open {
+      --globeIconOpacity: 1;
+      --bgColor: rgba(0,0,0,0.05);
+    }
+  }
+}

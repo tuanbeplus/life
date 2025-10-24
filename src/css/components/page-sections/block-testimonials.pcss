@@ -1,0 +1,228 @@
+
+
+.block-testimonials {
+  --testimonialFlexDirection: row;
+  --imageWidth: 400px;
+  --imageMaxWidth: 400px;
+  [class^='center-frame'] {
+    @mixin pad-y 60px, 100px;
+    .testimonials-slideshow {
+      position: relative;
+      .-slides {
+        .-slide {
+          @mixin inset-abs;
+          bottom: auto;
+          --slideOpacity: 0;
+          opacity: var(--slideOpacity);
+          transition: opacity 0.2s;
+          &.-current {
+            --slideOpacity: 1;
+          }
+          .testimonial {
+            display: flex;
+            flex-direction: var(--testimonialFlexDirection);
+            gap: 40px;
+            align-items: center;
+            .-image {
+              overflow: hidden;
+              width: var(--imageWidth);
+              max-width: var(--imageMaxWidth);
+              .mask {
+                color: var(--colorWhite);
+              }
+            }
+            .-text {
+              flex: 1;
+              padding: 40px 0;
+              .-title {
+                @mixin clampRem font-size, 2, 3;
+                font-weight: bold;
+                line-height: 1.3;
+                margin-bottom: 1em;
+              }
+              blockquote {
+                p {
+                  @mixin clampRem font-size, 1.2, 1.5;
+                }
+              }
+              .attribution {
+                font-weight: 500;
+              }
+            }
+          }
+        }
+      }
+      .pagination {
+        bottom: 10px;
+        left: 440px;
+        position: absolute;
+        z-index: 25;
+        /* is this shared with something else? */
+        ul {
+          display: flex;
+          margin-left: -10px;
+          > li {
+            transition: background-color 0.2s;
+            background: var(--colorUltralightGrey);
+            border-radius: 20px;
+            cursor: pointer;
+            height: 14px;
+            margin: 0 10px;
+            width: 14px;
+            &:not(.-current) {
+              &:hover {
+                background: var(--brandGreen);
+              }
+            }
+            &.-current {
+              background: var(--brandMidGreen);
+            }
+          }
+        }
+      }
+    }
+  }
+  @media (max-width: 1200px) {
+    --testimonialFlexDirection: column;
+    --imageWidth: 80%;
+    --imageMaxWidth: 300px;
+    [class^='center-frame'] {
+      .testimonials-slideshow {
+        .pagination {
+          position: relative;
+          left: 0;
+        }
+      }
+    }
+  }
+}
+
+.listing.testimonials-OLD {
+  position: relative;
+  > li {
+    display: flex;
+    left: 0;
+    position: absolute;
+    top: 0;
+    width: 100%;
+    z-index: 9;
+    &.active {
+      position: relative;
+      z-index: 10;
+      .image {
+        opacity: 1;
+        transition-delay: 0s;
+      }
+      .title,
+      .quoted,
+      .attribution {
+        opacity: 1;
+      }
+    }
+    &:not(.active) {
+      .title,
+      .quoted,
+      .attribution {
+        opacity: 0;
+      }
+    }
+    .image {
+      transition: opacity 0.2s;
+      opacity: 0;
+      overflow: hidden;
+      transition-delay: 150ms;
+      width: 400px;
+      .mask {
+        color: var(--colorWhite);
+      }
+    }
+    .testimonial {
+      flex: 1;
+      padding: 40px 0 40px 40px;
+    }
+    .title,
+    .quoted,
+    .attribution {
+      transition: opacity 0.2s;
+      transition-delay: 0;
+    }
+    .title {
+      font-size: 45px;
+      font-weight: bold;
+      line-height: 58px;
+      margin-bottom: 50px;
+    }
+    .attribution {
+      font-size: 16px;
+      font-weight: 500;
+      margin-top: 15px;
+      max-width: 390px;
+    }
+  }
+}
+
+.masked {
+  overflow: hidden;
+  padding-top: 107.5%;
+  position: relative;
+  width: 100%;
+  img {
+    @mixin inset-abs 1px;
+    display: block;
+    height: calc(100% - 2px);
+    width: calc(100% - 2px);
+  }
+  .mask {
+    @mixin inset-abs;
+    color: inherit;
+    height: 101%;
+    overflow: hidden;
+    width: 101%;
+    display: flex;
+    place-items: center;
+    .svg-image {
+      height: 101%;
+      width: 101%;
+    }
+    svg {
+      width: 100%;
+      height: 100%;
+      * {
+        fill: var(--bgColor);
+      }
+    }
+  }
+}
+
+.quoted {
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 40px;
+  margin-bottom: 16px;
+  .quote-left,
+  .quote-right {
+    color: var(--brandMidGreen);
+    display: inline;
+    height: 0.6em;
+    position: relative;
+    top: -4px;
+    width: 0.6em;
+  }
+  .quote-left {
+    margin-right: 6px;
+    &.-vue {
+      margin-right: 0.4em;
+      top: -0.3em;
+    }
+  }
+  .quote-right {
+    margin-left: 6px;
+    &.-vue {
+      margin-left: 0.4em;
+      top: -0.3em;
+    }
+  }
+  p {
+    display: inline;
+  }
+}

@@ -1,0 +1,123 @@
+
+
+.blog-index {
+  /* @mixin section-pad-y; */
+  padding-bottom: 100px;
+  background-color: #fff;
+  /* --sectionPadTopFactor: 2; */
+  --cTabsButtonBg: var(--colorOffWhite);
+  [class^='center-frame'] {
+    header {
+      padding-bottom: 30px;
+      h5 {
+        font-size: 24px;
+        margin-bottom: 0.6em;
+      }
+    }
+    .blog-index-grid {
+      width: 100%;
+    }
+  }
+}
+
+.blog-index-tabbed {
+}
+
+.blog-index-grid {
+  .-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+    .-slot {
+      --displayBlock: none;
+      display: var(--displayBlock);
+      &.-visible {
+        --displayBlock: block;
+      }
+      .-article {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        position: relative;
+        --overlayOpacity: 0;
+        --boxBgColor: var(--colorWhite);
+        --textSecondaryColor: var(--brandTeal);
+        &:hover {
+          --overlayOpacity: 0.3;
+          --boxBgColor: var(--brandOrange);
+          --textSecondaryColor: var(--colorBlack);
+        }
+        .-img {
+          border-radius: 20px 20px 0 0;
+          overflow: hidden;
+          position: relative;
+          flex: 0 0 auto;
+          height: 50%;
+          img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
+          &::after {
+            @mixin inset-abs;
+            content: '';
+            background-color: rgba(0, 0, 0, var(--overlayOpacity));
+            z-index: 1;
+            transition: background-color 0.4s;
+          }
+        }
+        .details {
+          transition: all 0.2s;
+          border: 1px solid var(--brandOrange40);
+          border-radius: 0 0 20px 20px;
+          border-width: 0 1px 1px 1px;
+          flex: 1;
+          font-size: 17px;
+          padding: 18px 25px 60px 25px;
+          position: relative;
+          background-color: var(--boxBgColor);
+          transition: background-color 0.4s;
+          color: var(--colorBlack);
+          .-cat {
+            font-weight: 700;
+            text-transform: uppercase;
+            line-height: 1.2;
+            font-size: 14px;
+            color: var(--textSecondaryColor);
+            transition: color 0.4s;
+          }
+          time {
+            font-size: 13px;
+          }
+          h3 {
+            font-size: 17px;
+            margin-top: 0.6em;
+            font-weight: 500;
+          }
+          .cta {
+            bottom: 0;
+            left: 0;
+            line-height: 20px;
+            padding: 15px 25px;
+            position: absolute;
+            display: flex;
+            gap: 0.8em;
+            align-items: center;
+            text-transform: uppercase;
+            svg {
+              position: relative;
+              top: -0.1em;
+            }
+          }
+        }
+      }
+    }
+  }
+  .discover-more {
+    width: 100%;
+    margin-top: 60px;
+    display: flex;
+    justify-content: center;
+  }
+}
+

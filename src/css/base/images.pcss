@@ -1,0 +1,37 @@
+
+img {
+  &.contain {
+    height: 100%;
+    object-fit: contain;
+    width: 100%;
+  }
+  &.cover {
+    display: block;
+    object-fit: cover;
+    width: 101%;
+    height: 101%;
+  }
+  &.scale-down {
+    height: 100%;
+    object-fit: scale-down;
+    width: 100%;
+  }
+  &.ia-bottom {
+    object-position: bottom center !important;
+  }
+}
+
+
+.tab-feature-image {
+  margin-bottom: 60px;
+  position: relative;
+  h3 {
+    bottom: 20%;
+    left: 0;
+    padding: 0 10%;
+    position: absolute;
+    text-align: center;
+    width: 100%;
+    z-index: 10;
+  }
+}

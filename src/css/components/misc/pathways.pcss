@@ -1,0 +1,182 @@
+
+
+.pathway {
+  padding-top: 40px;
+  .step {
+    position: relative;
+    text-align: center;
+    --opacity: 0;
+    --transform: scale(1.03);
+    --transitionDelayFactor: 0.16s;
+    &.-showing {
+      --opacity: 1;
+      --transform: scale(1);
+    }
+    .line {
+      opacity: var(--opacity);
+      transition: opacity 0.9s;
+      @media (--contentTabsNotSml) {
+        right: 50%;
+        position: absolute;
+        .svg-image {
+          svg {
+            transform: translate(-50%, -50%);
+            -ms-transform: translate(-50%, -50%);
+            -webkit-transform: translate(-50%, -50%);
+            left: 50%;
+            position: absolute;
+            top: 50%;
+            height: 100%;
+            width: 100%;
+            path {
+              stroke: var(--brandGreen) !important;
+              stroke-dasharray: 8pt;
+              stroke-width: 0.1em;
+            }
+          }
+        }
+        &.in {
+          top: -10px;
+        }
+        &.v3,
+        &.v5,
+        &.v7 {
+          left: 50%;
+          right: auto;
+        }
+        &.v1 { width: 60%; padding-top: 34%; }
+        &.v2 { width: 55%; padding-top: 26.4%; }
+        &.v3 { width: 117%; padding-top: 24%; }
+        &.v4 { width: 124%; padding-top: 17.3%; }
+        &.v5 { width: 110%; padding-top: 37.3%; }
+        &.v6 { width: 100%; padding-top: 21%; }
+        &.v7 { width: 52%; padding-top: 40.5%; }
+      }
+      @media (--contentTabsSml) {
+        border-bottom: var(--faintLine);
+        .svg-image {
+          display: none;
+        }
+      }
+    }
+    > .inner {
+      padding-bottom: 40px;
+      @media (--contentTabsNotSml) {
+        padding-top: var(--padTop);
+        padding-left: var(--padLeft, 0);
+        padding-right: var(--padRight, 0);
+      }
+      @media (--contentTabsSml) {
+        padding-top: 60px;
+        padding-bottom: 60px;
+      }
+      h3 {
+        margin-bottom: 15px;
+      }
+      .icon-container {
+        margin: 20px 0 10px 0;
+        text-align: center;
+        .icon {
+          height: 40px;
+          width: 55px;
+        }
+      }
+      .content {
+        font-size: 15px;
+        margin-top: 4px;
+      }
+      > :first-child,
+      > :nth-child(2),
+      > :nth-child(3),
+      > :nth-child(4),
+      > :nth-child(5),
+      > :nth-child(6),
+      > :nth-child(7) {
+        opacity: var(--opacity);
+        transform: var(--transform);
+        transition: all 0.4s;
+      }
+      > :first-child {
+        transition-delay: calc(var(--transitionDelayFactor) * 2);
+      }
+      > :nth-child(2) {
+        transition-delay: calc(var(--transitionDelayFactor) * 4);
+      }
+      > :nth-child(3) {
+        transition-delay: calc(var(--transitionDelayFactor) * 4.5);
+      }
+      > :nth-child(4) {
+        transition-delay: calc(var(--transitionDelayFactor) * 5);
+      }
+      > :nth-child(5) {
+        transition-delay: calc(var(--transitionDelayFactor) * 5.5);
+      }
+      > :nth-child(6) {
+        transition-delay: calc(var(--transitionDelayFactor) * 6);
+      }
+      > :nth-child(7) {
+        transition-delay: calc(var(--transitionDelayFactor) * 7);
+      }
+    }
+    @media (--contentTabsNotSml) {
+      width: 50%;
+      &:first-child {
+        .line {
+          left: var(--firstLineLeft);
+          right: var(--firstLineRight);
+          transform: var(--firstLineTransform);
+        }
+      }
+      &:nth-child(7n+2) {
+        left: 50%;
+        --padTop: 26.4%;
+      }
+      &:nth-child(7n+3) {
+        left: 0;
+        --padTop: 24%;
+      }
+      &:nth-child(7n+4) {
+        left: 50%;
+        --padTop: 17.3%;
+        --padLeft: 19%;
+        .line {
+          &.v4 {
+            right: 35%;
+          }
+        }
+      }
+      &:nth-child(7n+5) {
+        left: 10%;
+        margin-top: 20px;
+        --padTop: 19.2%;
+        --padRight: 17%;
+        .line {
+          &.v5 {
+            left: 35%;
+          }
+        }
+      }
+      &:nth-child(7n+6) {
+        left: 50%;
+        --padTop: 21%;
+      }
+      &:nth-child(7n) {
+        transform: translateX(-50%);
+        left: 50%;
+        --padTop: 40.5%;
+      }
+      &:first-child {
+        transform: translateX(-50%);
+        left: 50%;
+        --padTop: 34%;
+      }
+    }
+  }
+  .outro {
+    margin: 75px auto 0 auto;
+    max-width: 660px;
+    padding: 0 var(--page-gutter-width);
+    text-align: center;
+  }
+}
+

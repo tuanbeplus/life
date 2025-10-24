@@ -1,0 +1,108 @@
+
+
+:root {
+  --font: 'Poppins', Arial, Helvetica, sans-serif;
+
+  --brandOrange: #f47b20; /* previously also called @color-primary */
+  --brandOrangeHover: #d45b00;
+  --brandOrangeActive: var(--brandTeal);
+  --brandOrange40: rgba(255, 123, 32, 0.4);
+  --brandLightOrange: #ffecde;
+  --brandGreen: #679146; /* previously @color-tertiary */
+  --brandGreenHover: #4d752d;
+  --brandGreen50: rgba(103, 145, 70, 0.5);
+  --brandLightGreen: #e6ffcd;
+  --brandMidGreen: #8dc63f;
+  --brandGreenPakistan: #3b6e04;
+  --brandPastelGreen: #e8f4d9;
+  --brandPurpleRoyal: #704c98;
+  --brandLightPurple: #eedcff;
+  --brandLightTeal: #ccf5fb;
+  --brandMedTeal: #6CD2E4;
+  --brandTealSeaweed: #00798e;
+  --brandMidOrange: #f1a92a;
+  --brandPurple: #ba96e3;
+  --brandPurpleHover: #644489;
+  --brandTeal: #1e9eb6; /* previously @color-secondary */
+  --brandTeal30: rgba(30, 158, 182, 0.3);
+  --brandTealHover: #04798f;
+  --brandYellow: #f1a92a;
+  --brandYellowHover: #d99725;
+  --brandLime: var(--brandMidGreen);
+  --brandLimeHover: #77ae2d;
+  
+  --colorRed: #ff0000;
+  --colorBlackAbsolute: #000000; /* previously @color-black */
+  --colorBlack: #151515; /* previously @color-near-black */
+  --colorDarkGrey: #3a3a3a;
+  --colorMidGrey: #797979;
+  --colorLightGrey: #b2b2b2;
+  --lightestLargeTextAAA: #767676;
+  --colorVeryLightGrey: #c6c6c6;
+  --colorVeryVeryLightGrey: #d8d8d8;
+  --colorUltralightGrey: #e5e5e5;
+  --colorOffWhite: #f4f4f4;
+  --colorWhite: #ffffff;
+
+  --colorFieldFocus: #1e71b8;
+  --colorBorders: #edf0f0;
+
+  /* new */
+  --strokeLightColor: rgba(0, 0, 0, 0.2);
+  --strokeLight: 1px solid var(--strokeLightColor);
+  --inputBorderRadius: 12px;
+
+  --transitionSlowFastSlow: cubic-bezier(0.490, 0.075, 0.225, 0.835);
+  --transitionFastSlow: cubic-bezier(0.015, 1.015, 0.690, 1.010);
+  --faintLine: 1px solid rgba(0,0,0,0.15);
+  --boxShadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  --modalHeight: 94vh;
+
+  --colorBodyBg: var(--colorWhite);
+  --colorBodyFg: var(--colorBlack);
+  --colorFontPrimary: var(--brandTeal);
+
+  --colorAlertInfoBg: #d9edf7;
+  --colorAlertInfoText: #31708f;
+  --colorAlertInfoBorder: #bce8f1;
+  --colorAlertOkBg: #dff0d8;
+  --colorAlertOkText: #3c763d;
+  --colorAlertOkBorder: #d6e9c6;
+  --colorAlertWarningBg: #fcf8e3;
+  --colorAlertWarningText: #8a6d3b;
+  --colorAlertWarningBorder: #faebcc;
+  --colorAlertErrorBg: #f2dede;
+  --colorAlertErrorText: #a94442;
+  --colorAlertErrorTextDark: #8c2c2a;
+  --colorAlertErrorBorder: #ebccd1;
+
+  --colorYellowGreenCrayola: #bae575;
+  --colorYellowGreen: #8dc63f;
+  --colorEerieBlack: #151515;
+  --colorMiddleBlue: #85d7e9;
+  --colorBurntOrange: #c75218;
+
+  --borderRadiusSmall: 3px;
+  --borderRadiusMedium: 6px;
+
+  --formFieldPlaceholder: var(--colorLightGrey);
+  --formFieldBorderRadius: var(--borderRadiusSmall);
+  --formFieldBorder: var(--strokeLightColor);
+  --formFieldBorderActive: var(--colorDarkGrey);
+  --formFieldBorderError: var(--colorRed);
+  --formFieldBorderDisabled: var(--colorVeryLightGrey);
+  --formFieldBgDisabled: var(--colorOffWhite);
+
+  --formFieldRadius: 12px;
+
+  --curveColor: var(--colorOffWhite);
+
+}
+#app .dp__main * {
+  --dp-primary-color: var(--brandOrange);
+  --dp-font-family: var(--font);
+  --dp-menu-border-color: #000;
+  .dp__time_display.dp__time_display_inline.dp--time-overlay-btn {
+    font-size: 20px;
+  }
+}

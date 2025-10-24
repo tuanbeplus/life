@@ -1,0 +1,106 @@
+@custom-media --successStoryNotSml (min-width: 1001px);
+@custom-media --successStorySml (max-width: 1000px);
+
+
+.success-story {
+  @media (--successStoryNotSml) {
+    &:nth-child(2n+1) {
+      .image {
+        padding-left: 90px;
+      }
+    }
+    &:nth-child(2n) {
+      .story-container {
+        flex-direction: row-reverse;
+      }
+      .image {
+        padding-right: 90px;
+      }
+    }
+    &:first-of-type {
+      .story-container {
+        padding-top: 0;
+        .story {
+          padding-top: 40px;
+        }
+      }
+    }
+  }
+}
+
+.story-container {
+  display: flex;
+  padding-bottom: 120px;
+  padding-top: 60px;
+  --contentRows: 0fr;
+  --expandedShowOpacity: 0;
+  --expandedHideOpacity: 1;
+  --expandedPointerEventsNone: auto;
+  --expandedPointerEventsAuto: none;
+  &.-expanded {
+    --contentRows: 1fr;
+    --expandedShowOpacity: 1;
+    --expandedHideOpacity: 0;
+    --expandedPointerEventsNone: none;
+    --expandedPointerEventsAuto: auto;
+  }
+  .story {
+    flex: 1;
+    padding-top: 50px;
+    h3 {
+      margin-bottom: 45px;
+    }
+    .quoted {
+      margin-bottom: 45px;
+    }
+    .-expander {
+      display: grid;
+      grid-template-rows: var(--contentRows);
+      transition: grid-template-rows 0.6s var(--transitionSlowFastSlow);
+      .-height {
+        overflow: hidden;
+        .content {
+          padding-bottom: 0;
+        }
+      }
+    }
+    .toggle-content {
+      position: relative;
+      margin-top: 30px;
+      .button {
+        left: 0;
+        position: relative;
+        z-index: 1;
+        display: flex;
+        gap: 0.7em;
+        align-items: center;
+        &.show {
+          opacity: var(--expandedHideOpacity);
+          pointer-events: var(--expandedPointerEventsNone);
+        }
+        &.hide {
+          opacity: var(--expandedShowOpacity);
+          pointer-events: var(--expandedPointerEventsAuto);
+          position: absolute;
+          top: 0;
+        }
+      }
+    }
+    .attribution {
+      transition: all 0.3s ease;
+    }
+  }
+  .image {
+    width: 43%;
+  }
+  @media (--successStorySml) {
+    flex-direction: column-reverse;
+    .story {
+    }
+    .image {
+      @mixin margin-x;
+      width: 100%;
+      max-width: 280px;
+    }
+  }
+}

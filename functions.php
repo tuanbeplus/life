@@ -937,7 +937,7 @@ function pageIsPcos() {
 
 function life_enqueue_main() {
   $theme_dir = get_template_directory_uri();
-  $theme_ver = '1.0.0';
+  $theme_ver = '1.0.2';
   wp_enqueue_style('life-main-css', $theme_dir . '/assets/css/main.css', array(), $theme_ver, 'all');
   wp_enqueue_script('life-main-js', $theme_dir . '/assets/js/main.js', array('jquery'), $theme_ver, true);
 }

@@ -481,7 +481,7 @@ jQuery(function($){
 
 // Gravity Forms Progressive Field Reveal (jQuery)
 jQuery(function($){
-    'use strict';
+    'use strict';    
 
     // Progressive field reveal class
     class ProgressiveFieldReveal {
@@ -536,27 +536,47 @@ jQuery(function($){
             // Reset all fields on current page first
             currentPage.find('.gfield').removeClass('active-field disabled-field completed-field');
 
+            // Track if we've found the first incomplete field
+            let foundFirstIncomplete = false;
+
             // Apply initial states to valid fields on current page
             this.validFields.each((index, field) => {
                 const $field = $(field);
                 
-                if (index === 0) {
-                    // First field on current page is active
+                // Check if this field is already completed
+                const isFieldCompleted = this.isFieldValid($field);
+                
+                // Check if this is a select field
+                const isSelectField = $field.find('select.gfield_select').length > 0;
+                let btnClear = '<span class="btn-clear-select"></span>';
+                
+                if (isFieldCompleted) {
+                    // Field is completed, mark as completed
+                    $field.addClass('completed-field').removeClass('active-field disabled-field');
+                    
+                    // If it's a select field, also add is_valid class
+                    if (isSelectField) {
+                        $field.addClass('is_valid');
+                        $field.find('.ginput_container_select').append(btnClear);
+                    }
+                } else if (!foundFirstIncomplete) {
+                    // This is the first incomplete field, make it active
                     $field.addClass('active-field').removeClass('disabled-field completed-field');
+                    foundFirstIncomplete = true;
+                    this.activeFieldIndex = index;
                 } else {
-                    // Other fields on current page are disabled/blurred
+                    // Other incomplete fields are disabled/blurred
                     $field.addClass('disabled-field').removeClass('active-field completed-field');
                 }
             });
 
-            // Reset active field index for new page
-            this.activeFieldIndex = 0;
-
             // Disable page footer buttons initially
             this.updatePageFooterState();
 
-            // Validate first field on load
-            this.validateCurrentField();
+            // Validate first field on load if there's an active field
+            if (foundFirstIncomplete) {
+                this.validateCurrentField();
+            }
         }
 
         // Bind events to fields

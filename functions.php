@@ -24,6 +24,7 @@
  * @subpackage life
  * @since life 1.0
  */
+
 require_once('inc/salesforce.php');
 
 function env($key, $default = null) {

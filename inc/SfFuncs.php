@@ -1,15 +1,9 @@
 <?php
 namespace SfFuncs;
 
-define('SF_ENV', get_field('salesforce_site_url', 'option'));
-define('SF_USERNAME', get_field('salesforce_username', 'option'));
-define('SF_PASSWORD', get_field('salesforce_password', 'option'));
-define('SF_CLIENT_ID', get_field('salesforce_client_id', 'option'));
-define('SF_CLIENT_SECRET', get_field('salesforce_client_secret', 'option'));
-define('SF_TOKEN', '');
+require_once( ABSPATH . 'sf-config.php');
 
 require_once('SfDebug.php');
-
 
 function languageStringForSalesforce($lang) {
     switch ($lang) {

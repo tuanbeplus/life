@@ -163,8 +163,14 @@ const { ContactForm } = useContactForm()
 
 class ContactFormGestational extends ContactForm {
   constructor(lang) {
-    const data = fieldsData[lang]
-    super(data.fields, lang)
+    // Default to 'en' if lang is invalid or undefined
+    const validLang = (lang && fieldsData[lang]) ? lang : 'en'
+    const data = fieldsData[validLang]
+    if (!data || !data.fields) {
+      console.error('ContactFormGestational: Invalid language data for lang:', lang)
+      throw new Error(`Invalid language configuration for: ${lang}`)
+    }
+    super(data.fields, validLang)
     this.data = data
     this._formId = 'gestational'
   }

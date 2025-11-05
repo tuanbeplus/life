@@ -62,7 +62,13 @@ const props = defineProps({
   },
 })
 
-const f = computed(() => props.contactForm.fields)
+const f = computed(() => {
+  if (!props.contactForm || !props.contactForm.fields) {
+    console.error('ContactFormFieldsGestational: contactForm.fields is undefined', props.contactForm)
+    return {}
+  }
+  return props.contactForm.fields
+})
 
 
 

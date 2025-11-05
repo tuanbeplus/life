@@ -937,7 +937,7 @@ function pageIsPcos() {
 
 function life_enqueue_main() {
   $theme_dir = get_template_directory_uri();
-  $theme_ver = '1.0.2';
+  $theme_ver = time();
   wp_enqueue_style('life-main-css', $theme_dir . '/assets/css/main.css', array(), $theme_ver, 'all');
   wp_enqueue_script('life-main-js', $theme_dir . '/assets/js/main.js', array('jquery'), $theme_ver, true);
 }
@@ -1006,10 +1006,17 @@ function life_breadcrumbs() {
   <div id="breadcrumbs">
     <ul>
       <?php foreach ($ancestors as $idx => $ancestor): ?>
+        <?php
+          // Wrap 'Life!' in <em> if present in the title.
+          $title = $ancestor->title;
+          if (strpos($title, 'Life!') !== false) {
+            $title = str_replace('Life!', '<em style="margin-right:5px;">Life!</em>', $title);
+          }
+        ?>
         <?php if ($idx == (count($ancestors) - 1)): ?>
-          <li><?= apply_filters('the_brand', esc_html($ancestor->title)) ?></li>
+          <li><?php echo $title; ?></li>
         <?php else: ?>
-          <li><a href="<?= $ancestor->url ?>"><?= apply_filters('the_brand', esc_html($ancestor->title)) ?></a></li>
+          <li><a href="<?= $ancestor->url ?>"><?php echo $title; ?></a></li>
         <?php endif ?>
       <?php endforeach ?>
     </ul>

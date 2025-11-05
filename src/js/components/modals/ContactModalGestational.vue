@@ -46,13 +46,16 @@ import useContactFormGestational from '#/useContactFormGestational.js'
 const props = defineProps({
   lang: {
     type: String,
-    required: true,
+    required: false,
+    default: 'en',
   },
 })
 
 
 const { ContactFormGestational, modal } = useContactFormGestational()
-const contactForm = reactive(new ContactFormGestational(props.lang))
+// Ensure lang is valid, default to 'en' if not provided or invalid
+const validLang = (props.lang && (props.lang === 'en' || props.lang === 'vi')) ? props.lang : 'en'
+const contactForm = reactive(new ContactFormGestational(validLang))
 
 
 

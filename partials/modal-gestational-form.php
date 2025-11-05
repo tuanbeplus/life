@@ -1,5 +1,5 @@
 <?php
-$lang = get_the_ID() == GESTATIONAL_VIETNAMESE ? 'vi' : 'en';
+$lang = pageLang()->lang === 'vi' ? 'vi' : 'en';
 ?>
 <div id="gestational-form-modal" data-lang="<?= $lang ?>">
   <div class="-window">

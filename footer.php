@@ -10,7 +10,7 @@
         <?php elseif (pageIsGestational()): ?>
           <contact-modal-gestational
             class="-gestational"
-            lang="<?= get_the_ID() == GESTATIONAL_VIETNAMESE ? 'vi' : 'en' ?>"
+            lang="<?= pageLang()->lang === 'vi' ? 'vi' : 'en' ?>"
           ></contact-modal-gestational>
         <?php else: ?>
           <health-check-trigger
@@ -31,7 +31,6 @@
         <?php endif ?>
       </div><!-- /#wrapper -->
     </div><!-- /#app -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500;1,700&display=swap" rel="stylesheet">
     <?php wp_footer() ?>
   </body>
 </html>

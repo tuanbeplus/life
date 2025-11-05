@@ -1,6 +1,6 @@
 // Main Life Health Check functionality, rewritten to use jQuery document ready instead of IIFE pattern
 
-jQuery(function($){
+jQuery(function ($) {
     'use strict';
 
     const lhcFormId = 2;
@@ -8,7 +8,7 @@ jQuery(function($){
 
     // Function to update radio button labels with first character
     function updateRadioButtonLabels() {
-        $(`form.${lhcFormClass} .gfield_radio .gchoice label`).each(function() {            
+        $(`form.${lhcFormClass} .gfield_radio .gchoice label`).each(function () {
             const $label = $(this);
             const labelText = $label.text().trim();
             if (labelText) {
@@ -16,7 +16,7 @@ jQuery(function($){
                 // Create a unique class for this specific label
                 const uniqueClass = 'radio-label-' + Math.random().toString(36).substr(2, 9);
                 $label.addClass(uniqueClass);
-                
+
                 // Add dynamic CSS for this specific label
                 if (!$('#' + uniqueClass + '-style').length) {
                     $('<style id="' + uniqueClass + '-style">')
@@ -27,15 +27,15 @@ jQuery(function($){
         });
     }
 
-    function updateSidebarProgressSteps() {        
+    function updateSidebarProgressSteps() {
         // Get all Gravity Forms steps
         const gformSteps = $(`.gform_wrapper .gf_page_steps .gf_step`);
-        
+
         // Check if we're on confirmation page
-        const confirmationPage = $('.gform_confirmation_wrapper').length > 0 || 
-                                $('.gform_confirmation_message').length > 0 ||
-                                $('.gform_wrapper').hasClass('gform_confirmation');
-        
+        const confirmationPage = $('.gform_confirmation_wrapper').length > 0 ||
+            $('.gform_confirmation_message').length > 0 ||
+            $('.gform_wrapper').hasClass('gform_confirmation');
+
         // Mapping: sidebar steps to Gravity Forms steps
         const stepMapping = {
             'intro': 1,        // Step 1
@@ -44,7 +44,14 @@ jQuery(function($){
         };
 
         const heading = $('.sidebar .heading');
-        
+
+        if ($(`#gf_step_${lhcFormId}_1`).hasClass('gf_step_completed')) {
+            $('.sidebar .languages').hide();
+        }
+        else {
+            $('.sidebar .languages').show();
+        }
+
         // Update heading text based on form state
         if (confirmationPage) {
             heading.text('Results');
@@ -57,24 +64,24 @@ jQuery(function($){
                 heading.text('Get started');
             }
         }
-        
-        $('.sidebar .progress-steps .progress-step').each(function() {            
+
+        $('.life-health-check .sidebar .progress-steps .progress-step').each(function () {
             const $step = $(this);
             const stepType = $step.attr('class').match(/progress-step\s+(\w+)/);
-            
+
             if (!stepType) return;
-            
+
             const sidebarStepName = stepType[1];
-            
+
             // Reset all states first
             $step.removeClass('active completed');
-            
+
             // If we're on confirmation page, mark all steps as completed
             if (confirmationPage) {
                 $step.addClass('completed');
                 return; // Skip the rest of the logic
             }
-            
+
             // Check if this step corresponds to current GForm step
             if (sidebarStepName === 'intro') {
                 // Check step 1 status
@@ -100,7 +107,7 @@ jQuery(function($){
                 // Check if any of steps 3, 4, 5 are active or completed
                 let isActive = false;
                 let isCompleted = false;
-                
+
                 stepMapping.questions.forEach(stepNum => {
                     const step = $(`#gf_step_${lhcFormId}_${stepNum}`);
                     if (step.length) {
@@ -112,7 +119,7 @@ jQuery(function($){
                         }
                     }
                 });
-                
+
                 if (isActive) {
                     $step.addClass('active');
                 } else if (isCompleted) {
@@ -128,14 +135,49 @@ jQuery(function($){
         });
     }
 
+    // Show/Hide q12 checkbox options based on q1 (gender) selection
+    function updateQ12OptionsVisibility() {
+        const $form = $(`form.${lhcFormClass}`);
+        const $q1 = $form.find('.gfield.q1');
+        const $q12 = $form.find('.gfield.q12');
+
+        if (!$q1.length || !$q12.length) return;
+
+        const selectedQ1 = ($q1.find('input[type=radio]:checked').val() || '').toString().trim().toLowerCase();
+        const isFemale = selectedQ1 === 'female';
+
+        // Target q12 choices by normalized input value: all lowercase, hyphenated
+        const targetValues = ['gestational-diabetes', 'polucystic-ovarian-syndrome'];
+
+        $q12.find('input[type=checkbox]').each(function () {
+            const $input = $(this);
+            const inputVal = ($input.val() || '').toString().trim().toLowerCase().replace(/\s+/g, '-');
+            const match = targetValues.some(val => val.trim().toLowerCase() === inputVal);
+
+            if (match) {
+                const $choice = $input.closest('.gchoice');
+                if (isFemale) {
+                    $choice.show();
+                } else {
+                    // If currently checked, uncheck before hide
+                    if ($input.prop('checked')) {
+                        $input.prop('checked', false).trigger('change');
+                    }
+                    $choice.hide();
+                }
+            }
+        });
+    }
+
     // Initial call when document is ready
     if ($('body').hasClass('life-health-check')) {
         updateRadioButtonLabels();
         updateSidebarProgressSteps();
+        updateQ12OptionsVisibility();
     }
 
     // Update on Gravity Forms AJAX events
-    $(document).on('gform_confirmation_loaded', function() {
+    $(document).on('gform_confirmation_loaded', function () {
         if ($('body').hasClass('life-health-check')) {
             updateRadioButtonLabels();
             updateSidebarProgressSteps();
@@ -152,24 +194,26 @@ jQuery(function($){
     });
 
     // Update on any AJAX form submission
-    $(document).on('gform_post_render', function() {
+    $(document).on('gform_post_render', function () {
         if ($('body').hasClass('life-health-check')) {
             updateRadioButtonLabels();
             updateSidebarProgressSteps();
+            updateQ12OptionsVisibility();
             $(`form.${lhcFormClass}`).addClass('loading');
-            setTimeout(function() {
+            setTimeout(function () {
                 $(`form.${lhcFormClass}`).removeClass('loading');
-            }, 300);            
+            }, 300);
         }
     });
 
     // Update when form is loaded via AJAX
-    $(document).on('gform_load_form', function() {
+    $(document).on('gform_load_form', function () {
         if ($('body').hasClass('life-health-check')) {
             updateRadioButtonLabels();
             updateSidebarProgressSteps();
+            updateQ12OptionsVisibility();
             $(`form.${lhcFormClass}`).addClass('loading');
-            setTimeout(function() {
+            setTimeout(function () {
                 $(`form.${lhcFormClass}`).removeClass('loading');
                 $(`header.top-nav`).addClass('hidden');
             }, 300);
@@ -177,20 +221,22 @@ jQuery(function($){
     });
 
     // Update on field validation
-    $(document).on('gform_field_validation', function() {
+    $(document).on('gform_field_validation', function () {
         if ($('body').hasClass('life-health-check')) {
             updateRadioButtonLabels();
             updateSidebarProgressSteps();
+            updateQ12OptionsVisibility();
             $(`form.${lhcFormClass}`).addClass('loading');
             $(`header.top-nav`).addClass('hidden');
         }
     });
 
     // Add loading class for page navigation, scroll to form with 500px offset, smooth animation
-    $(document).on('gform_page_loaded', function() {
+    $(document).on('gform_page_loaded', function () {
         if ($('body').hasClass('life-health-check')) {
             $(`form.${lhcFormClass}`).addClass('loading');
             $(`header.top-nav`).addClass('hidden');
+            updateQ12OptionsVisibility();
             // Animate scroll to the form, offset 220px, smooth
             let $formWrapper = $(`.life-health-check .form-wrapper`);
             if ($formWrapper.length) {
@@ -198,14 +244,14 @@ jQuery(function($){
                     scrollTop: Math.max($formWrapper.offset().top - 220, 0)
                 }, 400, 'swing');
             }
-            setTimeout(function() {
+            setTimeout(function () {
                 $(`form.${lhcFormClass}`).removeClass('loading');
             }, 300);
         }
     });
 
     // Add loading class for form submission
-    $(document).on('gform_ajax_submit', function() {
+    $(document).on('gform_ajax_submit', function () {
         if ($('body').hasClass('life-health-check')) {
             $(`form.${lhcFormClass}`).addClass('loading');
             $(`header.top-nav`).addClass('hidden');
@@ -213,7 +259,7 @@ jQuery(function($){
     });
 
     // Remove loading class on validation errors
-    $(document).on('gform_validation_errors', function() {
+    $(document).on('gform_validation_errors', function () {
         if ($('body').hasClass('life-health-check')) {
             $(`form.${lhcFormClass}`).removeClass('loading');
             $(`header.top-nav`).addClass('hidden');
@@ -221,7 +267,7 @@ jQuery(function($){
     });
 
     // Add loading class when clicking next/previous buttons
-    $(document).on('click', '.gform_next_button, .gform_previous_button', function() {
+    $(document).on('click', '.gform_next_button, .gform_previous_button', function () {
         if ($('body').hasClass('life-health-check')) {
             $(`form.${lhcFormClass}`).addClass('loading');
             $(`header.top-nav`).addClass('hidden');
@@ -229,16 +275,15 @@ jQuery(function($){
     });
 
     // Add loading class when submitting form
-    $(document).on('submit', '.life-health-check', function() {
+    $(document).on('submit', '.life-health-check', function () {
         if ($('body').hasClass('life-health-check')) {
             $(`form.${lhcFormClass}`).addClass('loading');
             $(`header.top-nav`).addClass('hidden');
         }
     });
 
-
     // On change event for postcode field in .life-health-check-form
-    $(document).on('change input blur', `form.${lhcFormClass} .gfield.postcode input[type=number]`, function() {
+    $(document).on('change input blur', `form.${lhcFormClass} .gfield.postcode input[type=number]`, function () {
         if (!$(this).closest('.gfield').hasClass('gfield_contains_required')) {
             return;
         }
@@ -246,8 +291,10 @@ jQuery(function($){
         let currentPage = $input.closest('.gform_page');
         let parentField = $input.closest('.gfield');
         let nextButton = currentPage.find('.gform_next_button');
+        let pageFooter = currentPage.find('.gform_page_footer');
         let value = $.trim($input.val());
-        
+        let AcceptableNonVicMess = currentPage.find('.gfield.acceptable-non-vic-regions')
+
         // Get non-Victorian postcodes from hidden input
         let nonVicPostcodes = [];
         const nonVicInput = $('#non_vic_postcodes_json');
@@ -257,37 +304,55 @@ jQuery(function($){
             } catch (e) {
                 console.warn('Invalid JSON in non_vic_postcodes_json:', e);
             }
-        }        
-        
+        }
+
         // Check if postcode is valid Australian postcode (4 digits)
         let isValidFormat = /^[0-9]{4}$/.test(value);
         // Check if postcode is Victorian (3000-3999 and 8000-8999) or in acceptable non-Victorian list
         let isVicPostcode = /^(3[0-9]{3}|8[0-9]{3})$/.test(value);
         let isAcceptableNonVic = nonVicPostcodes.includes(value);
-        
+
+        // Valid: is 4 digits & (Vic or acceptable)
         let valid = isValidFormat && (isVicPostcode || isAcceptableNonVic);
-        
-            if (!valid) {
-                setTimeout(function() {
-                    parentField.addClass('gfield_error is_invalid').removeClass('is_valid');
-                    nextButton.prop('disabled', true);
-                    // Prevent multiple validation messages
-                    if (parentField.find('.validation_message').length === 0) {
-                        parentField.append('<div class="gfield_description validation_message gfield_validation_message">Please enter a valid Victoria postcode.</div>');
-                    }
-                }, 600);
-            } else {
-                setTimeout(function() {
-                    nextButton.prop('disabled', false);
-                    parentField.removeClass('gfield_error is_invalid').addClass('is_valid');
-                    parentField.find('.validation_message').remove();
-                }, 1000);
-            }
-        
+
+        // Case 1: Not 4 digits
+        if (!isValidFormat) {
+            AcceptableNonVicMess.hide();
+            setTimeout(function () {
+                parentField.addClass('gfield_error is_invalid').removeClass('is_valid');
+                nextButton.prop('disabled', true);
+                pageFooter.hide();
+                AcceptableNonVicMess.hide();
+                if (parentField.find('.validation_message').length === 0) {
+                    parentField.append('<div class="gfield_description validation_message gfield_validation_message">Please enter a valid postcode.</div>');
+                }
+            }, 800);
+        }
+        // Case 2: 4 digits but not valid (not Vic and not acceptable)
+        else if (!valid) {
+            setTimeout(function () {
+                parentField.removeClass('gfield_error is_valid is_invalid');
+                nextButton.prop('disabled', true);
+                pageFooter.hide();
+                AcceptableNonVicMess.slideDown(200);
+                parentField.find('.validation_message').remove(); // Remove any previous validation message
+            }, 800);
+        }
+        // Valid postcode (Vic or acceptable)
+        else {
+            AcceptableNonVicMess.hide();
+            setTimeout(function () {
+                nextButton.prop('disabled', false);
+                pageFooter.css('display', 'flex');
+                AcceptableNonVicMess.hide();
+                parentField.removeClass('gfield_error is_invalid').addClass('is_valid');
+                parentField.find('.validation_message').remove();
+            }, 800);
+        }
     });
 
     // On change event for name field in .life-health-check-form
-    $(document).on('change input blur', `form.${lhcFormClass} .gfield.name input[type=text]`, function() {
+    $(document).on('change input blur', `form.${lhcFormClass} .gfield.name input[type=text]`, function () {
         if (!$(this).closest('.gfield').hasClass('gfield_contains_required')) {
             return;
         }
@@ -296,13 +361,16 @@ jQuery(function($){
         let parentField = $input.closest('.gfield');
         let nextButton = currentPage.find('.gform_next_button');
         let value = $.trim($input.val());
-        setTimeout(function() {
+
+        nextButton.prop('disabled', true);
+
+        setTimeout(function () {
             if (!value || value.trim().length === 0) {
                 parentField.addClass('gfield_error is_invalid').removeClass('is_valid');
                 nextButton.prop('disabled', true);
                 // Prevent multiple validation messages
                 if (parentField.find('.validation_message').length === 0) {
-                    parentField.append('<div class="gfield_description validation_message gfield_validation_message">Please enter your full name.</div>');
+                    parentField.append('<div class="gfield_description validation_message gfield_validation_message">Please provide your full name - example: Jo Smith</div>');
                 }
             } else {
                 nextButton.prop('disabled', false);
@@ -312,7 +380,7 @@ jQuery(function($){
     });
 
     // On change event for email field in .life-health-check-form with email validation
-    $(document).on('change input blur', `form.${lhcFormClass} .gfield.email input[type=email]`, function() {
+    $(document).on('change input blur', `form.${lhcFormClass} .gfield.email input[type=email]`, function () {
         if (!$(this).closest('.gfield').hasClass('gfield_contains_required')) {
             return;
         }
@@ -324,13 +392,16 @@ jQuery(function($){
         // Basic email validation regex
         let emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         let isEmailValid = emailPattern.test(value);
-        setTimeout(function() {
+
+        nextButton.prop('disabled', true);
+
+        setTimeout(function () {
             if (!value || value.trim().length === 0 || !isEmailValid) {
                 parentField.addClass('gfield_error is_invalid').removeClass('is_valid');
                 nextButton.prop('disabled', true);
                 // Prevent multiple validation messages
                 if (parentField.find('.validation_message').length === 0) {
-                    parentField.append('<div class="gfield_description validation_message gfield_validation_message">Please enter a valid email address e.g name@email.com</div>');
+                    parentField.append('<div class="gfield_description validation_message gfield_validation_message">Please provide a valid email address - example: name@gmail.com</div>');
                 }
             } else {
                 nextButton.prop('disabled', false);
@@ -340,7 +411,7 @@ jQuery(function($){
     });
 
     // On change event for select field in .life-health-check-form with email validation
-    $(document).on('change', `form.${lhcFormClass} .gfield select.gfield_select`, function() {
+    $(document).on('change', `form.${lhcFormClass} .gfield select.gfield_select`, function () {
         if (!$(this).closest('.gfield').hasClass('gfield_contains_required')) {
             return;
         }
@@ -357,45 +428,28 @@ jQuery(function($){
             nextButton.prop('disabled', true);
             // Prevent multiple validation messages
             if (parentField.find('.validation_message').length === 0) {
-                parentField.append('<div class="gfield_description validation_message gfield_validation_message">Please choose an option.</div>');
+                parentField.append('<div class="gfield_description validation_message gfield_validation_message">Please select an option.</div>');
             }
         } else {
             nextButton.prop('disabled', false);
             parentField.removeClass('gfield_error is_invalid').addClass('is_valid').find('.validation_message').remove();
             parentField.find('.ginput_container_select').append(btnClear);
-        }
-    });
 
-    // On change event for checkbox fields to handle "None of the below" logic
-    $(document).on('change input', `form.${lhcFormClass} .gfield_checkbox input[type=checkbox]`, function() {
-        if (!$(this).closest('.gfield').hasClass('gfield_contains_required')) {
-            return;
-        }
-        let $changed = $(this);
-        let parentField = $changed.closest('.gfield');
-        let $checkboxes = parentField.find('input[type=checkbox]');
-        
-        // Find the "None of the below" checkbox (case-insensitive)
-        let $noneCheckbox = $checkboxes.filter(function() {
-            return $.trim($(this).val()).toLowerCase() === 'none';
-        });
-
-        if ($changed.prop('checked')) {
-            if ($changed.is($noneCheckbox)) {
-                // If "None of the below" is checked, uncheck all others
-                $checkboxes.not($noneCheckbox).each(function() {
-                    if ($(this).prop('checked')) {
-                        $(this).prop('checked', false).trigger('change');
-                    }
-                });
-            } else {
-                // If any box other than "None of the below" is checked, uncheck "None of the below"
-                $noneCheckbox.prop('checked', false);
+            // Animate scroll to next visible gfield that is not a section, with offset top 200px
+            let $nextField = parentField.nextAll('.gfield:visible').not('.gsection').first();
+            if ($nextField.length) {
+                let targetScroll = $nextField.offset().top - 120;
+                setTimeout(function () {
+                    $('html, body').animate({
+                        scrollTop: targetScroll
+                    }, 400);
+                    $('header.top-nav').addClass('hidden');
+                }, 400);
             }
         }
     });
 
-    $(document).on('click', '.gfield .btn-clear-select', function() {
+    $(document).on('click', '.gfield .btn-clear-select', function () {
         let $btn = $(this);
         let parentField = $btn.closest('.gfield');
         let select = parentField.find('select.gfield_select');
@@ -411,11 +465,84 @@ jQuery(function($){
         nextButton.prop('disabled', true);
     });
 
+    // On change event for checkbox fields to handle "None of the below" logic
+    $(document).on('change input', `form.${lhcFormClass} .gfield_checkbox input[type=checkbox]`, function () {
+        if (!$(this).closest('.gfield').hasClass('gfield_contains_required')) {
+            return;
+        }
+        let $changed = $(this);
+        let parentField = $changed.closest('.gfield');
+        let currentPage = parentField.closest('.gform_page');
+        let nextButton = currentPage.find('.gform_next_button');
+        let $checkboxes = parentField.find('input[type=checkbox]');
+
+        // Find the "None of the below" checkbox (case-insensitive)
+        let $noneCheckbox = $checkboxes.filter(function () {
+            return $.trim($(this).val()).toLowerCase() === 'none';
+        });
+
+        if ($changed.prop('checked')) {
+            if ($changed.is($noneCheckbox)) {
+                // If "None of the below" is checked, uncheck all others
+                $checkboxes.not($noneCheckbox).each(function () {
+                    if ($(this).prop('checked')) {
+                        $(this).prop('checked', false).trigger('change');
+                    }
+                });
+            } else {
+                // If any box other than "None of the below" is checked, uncheck "None of the below"
+                $noneCheckbox.prop('checked', false);
+            }
+        }
+        if (parentField.hasClass('confirm-contact')) {
+            if ($changed.prop('checked')) {
+                nextButton.prop('disabled', false);
+            }
+            else {
+                nextButton.prop('disabled', true);
+            }
+        }
+    });
+
+    // On change event for radio fields
+    $(document).on('change input', `form.${lhcFormClass} .gfield_radio input[type=radio]`, function () {
+        let $inputRadio = $(this);
+        let value = $.trim($inputRadio.val());
+        let parentField = $inputRadio.closest('.gfield');
+
+        if (value || value.trim().length > 0) {
+            if (parentField.hasClass('diabetes') && value.toLowerCase() === 'yes') {
+                setTimeout(function () {
+                    window.open('https://www.diabetesvic.org.au/', '_blank');
+                    return; // Stop further processing after redirect
+                }, 500);
+            }
+            else {
+                // Delay 300ms before scroll
+                let $nextField = parentField.nextAll('.gfield:visible').not('.gsection').first();
+                if ($nextField.length) {
+                    let targetScroll = $nextField.offset().top - 120;
+                    setTimeout(function () {
+                        $('html, body').animate({
+                            scrollTop: targetScroll
+                        }, 400);
+                        $('header.top-nav').addClass('hidden');
+                    }, 400);
+                }
+            }
+        }
+    });
+
     // Enhanced listener for analytics/hash update on field changes
     $(document).on('change input', '.gfield input, .gfield select', function () {
         const $input = $(this);
         const $parentField = $input.closest('.gfield');
         const $currentPage = $input.closest('.gform_page');
+
+        // Update dependent q12 visibility when q1 changes
+        if ($parentField.hasClass('q1')) {
+            updateQ12OptionsVisibility();
+        }
 
         // Improved: Get section and field name dynamically
         const sectionMap = ['intro', 'details'];
@@ -443,7 +570,7 @@ jQuery(function($){
         // Check if field is text, number, or email type
         const inputType = $input.attr('type') || '';
         const isTextNumberEmail = ['text', 'number', 'email'].includes(inputType.toLowerCase());
-        
+
         // For text, number, email fields: check validation class instead of hashing value
         let value;
         if (isTextNumberEmail) {
@@ -480,8 +607,8 @@ jQuery(function($){
 }); // end main jQuery ready
 
 // Gravity Forms Progressive Field Reveal (jQuery)
-jQuery(function($){
-    'use strict';    
+jQuery(function ($) {
+    'use strict';
 
     // Progressive field reveal class
     class ProgressiveFieldReveal {
@@ -505,12 +632,12 @@ jQuery(function($){
         setupProgressiveReveal() {
             // Get current page fields only (for pagination support)
             const currentPage = this.form.find('.gform_page:visible');
-            
+
             // Get all valid fields on current page (exclude sections, hidden, etc.)
-            this.validFields = currentPage.find('.gfield').filter(function() {
+            this.validFields = currentPage.find('.gfield').filter(function () {
                 const $field = $(this);
                 const fieldClass = $field.attr('class') || '';
-                
+
                 // Exclude fields that don't need user interaction
                 const excludeClasses = [
                     'gfield_html',           // HTML content fields
@@ -522,14 +649,15 @@ jQuery(function($){
                     'hidden_field',
                     'postcode',
                     'name',
-                    'mail'
+                    'mail',
+                    'confirm-contact',
                 ];
-                
+
                 // Check if field has any exclude classes
-                const hasExcludeClass = excludeClasses.some(excludeClass => 
+                const hasExcludeClass = excludeClasses.some(excludeClass =>
                     fieldClass.includes(excludeClass)
                 );
-         
+
                 return !hasExcludeClass;
             });
 
@@ -542,18 +670,18 @@ jQuery(function($){
             // Apply initial states to valid fields on current page
             this.validFields.each((index, field) => {
                 const $field = $(field);
-                
+
                 // Check if this field is already completed
                 const isFieldCompleted = this.isFieldValid($field);
-                
+
                 // Check if this is a select field
                 const isSelectField = $field.find('select.gfield_select').length > 0;
                 let btnClear = '<span class="btn-clear-select"></span>';
-                
+
                 if (isFieldCompleted) {
                     // Field is completed, mark as completed
                     $field.addClass('completed-field').removeClass('active-field disabled-field');
-                    
+
                     // If it's a select field, also add is_valid class
                     if (isSelectField) {
                         $field.addClass('is_valid');
@@ -621,13 +749,13 @@ jQuery(function($){
         // Check if field is valid
         isFieldValid($field) {
             const $inputs = $field.find('input, select, textarea');
-            
+
             // Check each input in the field
             let isValid = true;
             $inputs.each((index, input) => {
                 const $input = $(input);
                 const inputType = $input.attr('type') || input.tagName.toLowerCase();
-                
+
                 if (inputType === 'radio') {
                     // For radio groups, check if any in the group is selected
                     const radioName = $input.attr('name');
@@ -645,27 +773,27 @@ jQuery(function($){
                     isValid = isValid && $input.val().trim() !== '';
                 }
             });
-            
+
             return isValid;
         }
 
         // Reveal next field with animation
         revealNextField($currentField) {
             const currentIndex = this.validFields.index($currentField);
-            
+
             if (currentIndex === -1) return;
-            
+
             // Mark current field as completed
             $currentField.removeClass('active-field disabled-field').addClass('completed-field');
-            
+
             // Show next field if available
             const nextIndex = currentIndex + 1;
             if (nextIndex < this.validFields.length) {
                 const $nextField = $(this.validFields[nextIndex]);
-                
+
                 // Remove disabled class and add active class with animation
                 $nextField.removeClass('disabled-field').addClass('active-field');
-                
+
                 // Trigger fade-in animation
                 $nextField.fadeIn(200);
             }
@@ -675,9 +803,9 @@ jQuery(function($){
         updatePageFooterState() {
             const currentPage = this.form.find('.gform_page:visible');
             const pageFooter = currentPage.find('.gform_page_footer');
-            
+
             if (!pageFooter.length) return;
-            
+
             // Check if all fields on current page are completed
             let allFieldsCompleted = true;
             this.validFields.each((index, field) => {
@@ -687,13 +815,13 @@ jQuery(function($){
                     return false; // break the loop
                 }
             });
-            
+
             // Get all buttons in page footer
             const buttons = pageFooter.find('input[type="submit"], .gform_next_button, .gform_previous_button');
-            
-            buttons.each(function() {
+
+            buttons.each(function () {
                 const $button = $(this);
-                
+
                 // Always enable Previous button
                 if ($button.hasClass('gform_previous_button')) {
                     $button.prop('disabled', false);
@@ -716,11 +844,11 @@ jQuery(function($){
         // Reset to first field (useful for form resets)
         resetToFirstField() {
             this.activeFieldIndex = 0;
-            
+
             this.validFields.each((index, field) => {
                 const $field = $(field);
                 $field.removeClass('active-field disabled-field completed-field');
-                
+
                 if (index === 0) {
                     $field.addClass('active-field');
                 } else {
@@ -737,6 +865,21 @@ jQuery(function($){
 
     // Start the progressive reveal
     initProgressiveReveal();
+
+    // Toggle active state and slide field-list for sidebar field labels
+    $(document).on('click', '.sidebar .field-label', function () {
+        var $label = $(this);
+        var $field = $label.closest('.field');
+
+        // Fix: Use toggleClass instead of non-existent classToggle, and more robust toggling of .field-list
+        $field.toggleClass('active');
+
+        // Only toggle field-list if it exists
+        var $fieldList = $field.find('.field-list');
+        if ($fieldList.length) {
+            $fieldList.stop(true, true).slideToggle(200);
+        }
+    });
 
 }); // end jQuery ready
 

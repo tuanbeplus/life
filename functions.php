@@ -764,6 +764,74 @@ require get_template_directory().'/inc/share-modal.php';
 require get_template_directory().'/inc/health-check-api.php';
 require get_template_directory().'/inc/service-locator.php';
 
+/**
+ * AJAX handler to update Salesforce Lead phone number by email
+ */
+add_action('wp_ajax_life_update_lead_phone', 'life_ajax_update_lead_phone');
+add_action('wp_ajax_nopriv_life_update_lead_phone', 'life_ajax_update_lead_phone');
+
+function life_ajax_update_lead_phone() {
+    // Check if email and phone are provided
+    $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
+    $phone = isset($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
+    
+    if (empty($email)) {
+        wp_send_json_error([
+            'message' => 'Email is required.'
+        ]);
+        return;
+    }
+    
+    if (empty($phone)) {
+        wp_send_json_error([
+            'message' => 'Phone number is required.'
+        ]);
+        return;
+    }
+    
+    // Validate email format
+    if (!is_email($email)) {
+        wp_send_json_error([
+            'message' => 'Invalid email format.'
+        ]);
+        return;
+    }
+    
+    // Query Salesforce for Lead by email
+    $lead = \SfFuncs\queryLeadByEmail($email);
+    
+    if (!$lead || !isset($lead['Id'])) {
+        wp_send_json_error([
+            'message' => 'Lead not found with the provided email address.'
+        ]);
+        return;
+    }
+    
+    // Prepare data for update (Phone field in Salesforce)
+    $sf_data = [
+        'Phone' => $phone
+    ];
+    
+    // Update Lead in Salesforce
+    $errors = \SfFuncs\updateLeadById($lead['Id'], $sf_data);
+    
+    if (empty($errors)) {
+        wp_send_json_success([
+            'message' => 'Phone number updated successfully.',
+            'leadId' => $lead['Id']
+        ]);
+    } else {
+        $errorMessage = isset($errors[0]['message']) 
+            ? $errors[0]['message'] 
+            : 'Failed to update phone number in Salesforce.';
+        
+        wp_send_json_error([
+            'message' => $errorMessage,
+            'errors' => $errors
+        ]);
+    }
+}
+
 add_action( 'wp_enqueue_scripts', function () {
   wp_dequeue_style( 'wp-block-library' );
 });
@@ -940,6 +1008,11 @@ function life_enqueue_main() {
   $theme_ver = time();
   wp_enqueue_style('life-main-css', $theme_dir . '/assets/css/main.css', array(), $theme_ver, 'all');
   wp_enqueue_script('life-main-js', $theme_dir . '/assets/js/main.js', array('jquery'), $theme_ver, true);
+  
+  // Localize script with AJAX URL
+  wp_localize_script('life-main-js', 'lifeAjax', array(
+    'ajaxurl' => admin_url('admin-ajax.php')
+  ));
 }
 add_action('wp_enqueue_scripts', 'life_enqueue_main');
 

@@ -107,6 +107,126 @@ function postDataToSalesforce($sf_data) {
     }
 }
 
+/**
+ * Query Salesforce Lead by email address
+ *
+ * @param string $email
+ * @return array|false Returns Lead record with Id on success, false on failure
+ */
+function queryLeadByEmail($email) {
+    $curlHandleForToken = curl_init();
+    $response = getSalesforceAccessToken($curlHandleForToken);
+    $responseStatus = curl_getinfo($curlHandleForToken, CURLINFO_HTTP_CODE);
+    
+    if ($responseStatus == 200) {
+        $auth = json_decode($response);
+        $ch = curl_init();
+        
+        // Escape single quotes in email for SOQL query
+        $escapedEmail = str_replace("'", "\\'", $email);
+        $query = "SELECT Id, Email, Phone FROM Lead WHERE Email = '" . $escapedEmail . "' LIMIT 1";
+        $queryUrl = $auth->instance_url . '/services/data/v52.0/query/?q=' . urlencode($query);
+        
+        curl_setopt($ch, CURLOPT_URL, $queryUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt(
+            $ch,
+            CURLOPT_HTTPHEADER,
+            [
+                'Authorization: Bearer ' . $auth->access_token,
+                'Content-Type: application/json',
+            ]
+        );
+        
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpCode == 200) {
+            $data = json_decode($response, true);
+            if (isset($data['records']) && count($data['records']) > 0) {
+                return $data['records'][0];
+            }
+        }
+    }
+    
+    return false;
+}
+
+/**
+ * Update Salesforce Lead by ID
+ *
+ * @param string $leadId
+ * @param array $sf_data
+ * @return array Returns array of errors, empty array on success
+ */
+function updateLeadById($leadId, $sf_data) {
+    $curlHandleForToken = curl_init();
+    $response = getSalesforceAccessToken($curlHandleForToken);
+    $responseStatus = curl_getinfo($curlHandleForToken, CURLINFO_HTTP_CODE);
+    
+    if ($responseStatus == 200) {
+        $auth = json_decode($response);
+        $ch = curl_init();
+        
+        curl_setopt($ch, CURLOPT_URL, $auth->instance_url . '/services/data/v52.0/sobjects/Lead/' . $leadId);
+        curl_setopt($ch, CURLOPT_HEADER, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($sf_data));
+        curl_setopt(
+            $ch,
+            CURLOPT_HTTPHEADER,
+            [
+                'Authorization: Bearer ' . $auth->access_token,
+                'Content-Type: application/json',
+            ]
+        );
+        curl_setopt($ch, CURLINFO_HEADER_OUT, true);
+        
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if (PRINT_SALESFORCE_RESPONSE) {
+            \SfDebug\printSalesforceResponse($sf_data, $ch, $response);
+        }
+        
+        $sfPostErrors = [];
+        if ($httpCode == 204 || $httpCode == 200) {
+            // Success - no content or OK
+            return $sfPostErrors;
+        } else {
+            // Parse error response
+            foreach (explode("\r\n\r\n", $response) as $part) {
+                $data = json_decode($part, true);
+                if ($data) {
+                    if (isset($data['errorCode'])) {
+                        $sfPostErrors[] = $data;
+                    } elseif (is_array($data)) {
+                        foreach ($data as $d) {
+                            if (isset($d['errorCode'])) {
+                                $sfPostErrors[] = $d;
+                            }
+                        }
+                    }
+                }
+            }
+            if (empty($sfPostErrors)) {
+                $sfPostErrors[] = ['message' => 'HTTP Code: ' . $httpCode];
+            }
+        }
+        
+        return $sfPostErrors;
+    } else {
+        if (PRINT_SALESFORCE_RESPONSE) {
+            echo '<h2>$responseStatus</h2>';
+            echo '<h1>CURLINFO_HTTP_CODE: '.$responseStatus.'</h1>';
+        }
+        return [['message' => 'CURLINFO_HTTP_CODE: '.$responseStatus]];
+    }
+}
+
 function mappedFields($fields, $data) {
     $sf_data = [];
     foreach ($fields as $src_name => $def) {

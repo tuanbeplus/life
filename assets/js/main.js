@@ -55,6 +55,7 @@ jQuery(function ($) {
         // Update heading text based on form state
         if (confirmationPage) {
             heading.text('Results');
+            $('.sidebar .languages').hide();
         } else {
             // Check if intro step is completed
             const introStep = $(`#gf_step_${lhcFormId}_1`);
@@ -190,6 +191,9 @@ jQuery(function ($) {
                     scrollTop: Math.max($formWrapper.offset().top - 220, 0)
                 }, 400, 'swing');
             }
+            if ($('.form-wrapper .thank-you-mess').length === 0) {
+                $('.form-wrapper .share-wrapper').show();
+            }
         }
     });
 
@@ -247,6 +251,18 @@ jQuery(function ($) {
             setTimeout(function () {
                 $(`form.${lhcFormClass}`).removeClass('loading');
             }, 300);
+
+            setTimeout(function () {
+                // Ensure proper selection of current visible intro page and show footer only if it exists
+                const $introPage = $('.gform_page.intro:visible');
+                const $postcodeField = $(`form.${lhcFormClass} .gfield.postcode`);
+                if ($introPage.length && $postcodeField.hasClass('is_valid')) {
+                    let $pageFooter = $introPage.find('.gform_page_footer');
+                    if ($pageFooter.length) {
+                        $pageFooter.css('display', 'flex');
+                    }
+                }
+            }, 500);
         }
     });
 
@@ -315,6 +331,9 @@ jQuery(function ($) {
         // Valid: is 4 digits & (Vic or acceptable)
         let valid = isValidFormat && (isVicPostcode || isAcceptableNonVic);
 
+        parentField.removeClass('gfield_error is_invalid');
+        parentField.find('.validation_message').remove();
+
         // Case 1: Not 4 digits
         if (!isValidFormat) {
             AcceptableNonVicMess.hide();
@@ -343,7 +362,7 @@ jQuery(function ($) {
             AcceptableNonVicMess.hide();
             setTimeout(function () {
                 nextButton.prop('disabled', false);
-                pageFooter.css('display', 'flex');
+                pageFooter.slideDown(200).css('display', 'flex');
                 AcceptableNonVicMess.hide();
                 parentField.removeClass('gfield_error is_invalid').addClass('is_valid');
                 parentField.find('.validation_message').remove();
@@ -408,6 +427,8 @@ jQuery(function ($) {
                 parentField.removeClass('gfield_error is_invalid').addClass('is_valid').find('.validation_message').remove();
             }
         }, 1000);
+
+        $('input#lhc_user_email').val(value);
     });
 
     // On change event for select field in .life-health-check-form with email validation
@@ -436,15 +457,15 @@ jQuery(function ($) {
             parentField.find('.ginput_container_select').append(btnClear);
 
             // Animate scroll to next visible gfield that is not a section, with offset top 200px
-            let $nextField = parentField.nextAll('.gfield:visible').not('.gsection').first();
+            let $nextField = parentField.nextAll('.gfield:visible').not('.gsection').not('.gfield_html').first();
             if ($nextField.length) {
-                let targetScroll = $nextField.offset().top - 120;
+                let targetScroll = $nextField.offset().top - 200;
                 setTimeout(function () {
                     $('html, body').animate({
                         scrollTop: targetScroll
-                    }, 400);
+                    }, 400, 'swing');
                     $('header.top-nav').addClass('hidden');
-                }, 400);
+                }, 300);
             }
         }
     });
@@ -515,19 +536,19 @@ jQuery(function ($) {
                 setTimeout(function () {
                     window.open('https://www.diabetesvic.org.au/', '_blank');
                     return; // Stop further processing after redirect
-                }, 500);
+                }, 450);
             }
             else {
                 // Delay 300ms before scroll
-                let $nextField = parentField.nextAll('.gfield:visible').not('.gsection').first();
+                let $nextField = parentField.nextAll('.gfield:visible').not('.gsection').not('.gfield_html').first();
                 if ($nextField.length) {
-                    let targetScroll = $nextField.offset().top - 120;
+                    let targetScroll = $nextField.offset().top - 200;
                     setTimeout(function () {
                         $('html, body').animate({
                             scrollTop: targetScroll
-                        }, 400);
+                        }, 400, 'swing');
                         $('header.top-nav').addClass('hidden');
-                    }, 400);
+                    }, 300);
                 }
             }
         }
@@ -601,6 +622,105 @@ jQuery(function ($) {
                 value: value,
                 section: sectionName,
             });
+        }
+    });
+
+    // Final step form validation and submission
+    $(document).on('submit', '.final-step-form', function (e) {
+        e.preventDefault();
+        if (!$(this).closest('.life-health-check').length) {
+            return;
+        }
+
+        const $form = $(this);
+        const $phoneInput = $form.find('#phone-number');
+        const $validateMess = $form.find('.validate-mess');
+        const phoneValue = $.trim($phoneInput.val());
+
+        // Basic phone validation (at least 8 digits)
+        const phoneRegex = /^[0-9\s\-\+\(\)]{8,}$/;
+        const digitsOnly = phoneValue.replace(/\D/g, '');
+        const isValidPhone = digitsOnly.length >= 8 && phoneRegex.test(phoneValue);
+
+        // Reset validation state
+        $phoneInput.removeClass('error');
+        $validateMess.hide();
+
+        if (!phoneValue || !isValidPhone) {
+            $phoneInput.addClass('error');
+            $validateMess.show();
+            return false;
+        }
+
+        // Get email from hidden field
+        const email = $('input#lhc_user_email').val();
+        if (!email) {
+            $validateMess.text('Email not found. Please refresh the page and try again.').show();
+            return false;
+        }
+
+        // Disable submit button
+        const $submitBtn = $form.find('#btn-final-submit');
+        $submitBtn.prop('disabled', true).val('Submitting...');
+
+        // Submit via AJAX
+        $.ajax({
+            url: (typeof lifeAjax !== 'undefined' && lifeAjax.ajaxurl) ? lifeAjax.ajaxurl : '/wp-admin/admin-ajax.php',
+            type: 'POST',
+            data: {
+                action: 'life_update_lead_phone',
+                email: email,
+                phone: phoneValue
+            },
+            success: function (response) {
+                if (response.success) {
+                    $form.find('.field, .input-container').hide();
+                    var $thankYouMess = $('.gform_confirmation_wrapper .thank-you-mess');
+                    $thankYouMess.slideDown(300, function () {
+                        if ($thankYouMess.length) {
+                            var containerOffset = $thankYouMess.offset().top;
+                            var containerHeight = $thankYouMess.outerHeight();
+                            var windowHeight = $(window).height();
+                            var scrollTo = containerOffset - (windowHeight / 2) + (containerHeight / 2);
+                            $('html, body').animate({ scrollTop: Math.max(scrollTo, 0) }, 400);
+                        }
+                    });
+                    $('.form-wrapper .share-wrapper').show();
+                } else {
+                    $validateMess.text(response.data && response.data.message ? response.data.message : 'An error occurred. Please try again.').show();
+                    $submitBtn.prop('disabled', false).val('Submit');
+                }
+            },
+            error: function (xhr, status, error) {
+                $validateMess.text('An error occurred. Please try again.').show();
+                $submitBtn.prop('disabled', false).val('Submit');
+            }
+        });
+
+        return false;
+    });
+
+    // Real-time phone validation on input
+    $(document).on('input blur', '.final-step-form #phone-number', function () {
+        const $input = $(this);
+        const $form = $input.closest('.final-step-form');
+        const $validateMess = $form.find('.validate-mess');
+        const phoneValue = $.trim($input.val());
+
+        if (phoneValue) {
+            const phoneRegex = /^[0-9\s\-\+\(\)]{8,}$/;
+            const digitsOnly = phoneValue.replace(/\D/g, '');
+            const isValidPhone = digitsOnly.length >= 8 && phoneRegex.test(phoneValue);
+
+            if (isValidPhone) {
+                $input.removeClass('error');
+                $validateMess.hide();
+            } else {
+                $input.addClass('error');
+            }
+        } else {
+            $input.removeClass('error');
+            $validateMess.hide();
         }
     });
 
@@ -698,6 +818,9 @@ jQuery(function ($) {
                 }
             });
 
+            // Restore validity/completion states for visible fields (useful after page navigation)
+            this.restoreFieldStates();
+
             // Disable page footer buttons initially
             this.updatePageFooterState();
 
@@ -727,14 +850,18 @@ jQuery(function ($) {
                     this.form = $('.life-health-check');
                     if (this.form.length) {
                         this.setupProgressiveReveal();
+                        this.restoreFieldStates();
+                        this.updatePageFooterState();
                     }
-                }, 100);
+                }, 150);
             });
 
             $(document).on('gform_page_loaded', () => {
                 setTimeout(() => {
                     this.setupProgressiveReveal();
-                }, 100);
+                    this.restoreFieldStates();
+                    this.updatePageFooterState();
+                }, 150);
             });
         }
 
@@ -748,13 +875,17 @@ jQuery(function ($) {
 
         // Check if field is valid
         isFieldValid($field) {
+            // If Gravity Forms has marked this field as error, it's invalid
+            if ($field.hasClass('gfield_error')) return false;
+
             const $inputs = $field.find('input, select, textarea');
 
             // Check each input in the field
             let isValid = true;
             $inputs.each((index, input) => {
                 const $input = $(input);
-                const inputType = $input.attr('type') || input.tagName.toLowerCase();
+                const tag = input.tagName.toLowerCase();
+                const inputType = ($input.attr('type') || '').toLowerCase();
 
                 if (inputType === 'radio') {
                     // For radio groups, check if any in the group is selected
@@ -765,12 +896,14 @@ jQuery(function ($) {
                     // For checkboxes, check if any in the group is selected
                     const checkboxGroup = $field.find('input[type="checkbox"]');
                     isValid = isValid && checkboxGroup.filter(':checked').length > 0;
-                } else if (inputType === 'select') {
+                } else if (tag === 'select') {
                     // For selects, check if value is not empty
-                    isValid = isValid && $input.val() !== '' && $input.val() !== null;
+                    const v = $input.val();
+                    isValid = isValid && v !== '' && v !== null;
                 } else {
-                    // For text inputs, check if value is not empty
-                    isValid = isValid && $input.val().trim() !== '';
+                    // For text-like inputs and textarea, check if value is not empty
+                    const v = ($input.val() || '').toString();
+                    isValid = isValid && v.trim() !== '';
                 }
             });
 
@@ -797,6 +930,19 @@ jQuery(function ($) {
                 // Trigger fade-in animation
                 $nextField.fadeIn(200);
             }
+        }
+
+        // Restore .is_valid and .completed-field based on current values and errors
+        restoreFieldStates() {
+            const currentPage = this.form.find('.gform_page:visible');
+            currentPage.find('.gfield').each((_, el) => {
+                const $field = $(el);
+                const valid = this.isFieldValid($field);
+                $field.toggleClass('is_valid', valid && !$field.hasClass('gfield_error'));
+                if (valid) {
+                    $field.addClass('completed-field').removeClass('disabled-field');
+                }
+            });
         }
 
         // Update page footer button states based on field completion
@@ -867,7 +1013,7 @@ jQuery(function ($) {
     initProgressiveReveal();
 
     // Toggle active state and slide field-list for sidebar field labels
-    $(document).on('click', '.sidebar .field-label', function () {
+    $(document).on('click', '.sidebar .field-label.mobile', function () {
         var $label = $(this);
         var $field = $label.closest('.field');
 
@@ -881,5 +1027,37 @@ jQuery(function ($) {
         }
     });
 
-}); // end jQuery ready
+    // When resizing window and view width becomes > 767px, ensure .field-list is shown (slid down) in the sidebar fields
+    (function () {
+        $(window).on('resize', function () {
+            let currWidth = $(window).width();
 
+            if (! $('body').hasClass('life-health-check')) {
+                return;
+            }
+
+            if (currWidth > 767) {
+                // Remove .active from all .sidebar .field
+                $('.sidebar .field.active').removeClass('active');
+
+                // For each .sidebar .field .field-list that's hidden, slide it down
+                $('.sidebar .field .field-list').each(function () {
+                    if (!$(this).is(':visible')) {
+                        $(this).stop(true, true).slideDown(200);
+                    }
+                });
+            }
+            else {
+                // Remove .active from all .sidebar .field
+                $('.sidebar .field.active').removeClass('active');
+
+                $('.sidebar .field .field-list').each(function () {
+                    if ($(this).is(':visible')) {
+                        $(this).stop(true, true).slideUp(200);
+                    }
+                });
+            }
+        });
+    })();
+
+}); // end jQuery ready

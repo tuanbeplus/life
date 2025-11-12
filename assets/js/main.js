@@ -3,8 +3,45 @@
 jQuery(function ($) {
     'use strict';
 
-    const lhcFormId = 2;
+    // Get localized CALD languages and gravity form ID
+    const lhcFormId = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.gravityFormId) 
+        ? lifeHealthCheck.gravityFormId 
+        : 2;
     const lhcFormClass = 'life-health-check-form';
+    const caldLanguages = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.caldLanguages) 
+        ? lifeHealthCheck.caldLanguages 
+        : {};
+
+    const dvRedirectUrl = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.dvRedirectUrl) 
+        ? lifeHealthCheck.dvRedirectUrl 
+        : "https://www.diabetesvic.org.au/";    
+
+    // Helper function to get CALD text with fallback
+    function getCaldText(key, defaultValue) {
+        if (!caldLanguages || Object.keys(caldLanguages).length === 0) {
+            return defaultValue;
+        }
+        
+        const keys = key.split('.');
+        let value = caldLanguages;
+        
+        for (let k of keys) {
+            if (value && typeof value === 'object' && value[k] !== undefined) {
+                value = value[k];
+            } else {
+                return defaultValue;
+            }
+        }
+        
+        return value || defaultValue;
+    }
+
+    // Helper function to escape HTML
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
 
     // Function to update radio button labels with first character
     function updateRadioButtonLabels() {
@@ -54,15 +91,15 @@ jQuery(function ($) {
 
         // Update heading text based on form state
         if (confirmationPage) {
-            heading.text('Results');
+            heading.text(getCaldText('main_heading.results', 'Results'));
             $('.sidebar .languages').hide();
         } else {
             // Check if intro step is completed
             const introStep = $(`#gf_step_${lhcFormId}_1`);
             if (introStep.length && introStep.hasClass('gf_step_completed')) {
-                heading.text('Progress');
+                heading.text(getCaldText('main_heading.progress', 'Progress'));
             } else {
-                heading.text('Get started');
+                heading.text(getCaldText('main_heading.get_started', 'Get started'));
             }
         }
 
@@ -175,6 +212,11 @@ jQuery(function ($) {
         updateRadioButtonLabels();
         updateSidebarProgressSteps();
         updateQ12OptionsVisibility();
+        setTimeout(function () {
+            let footerIntroPage = $(`form.${lhcFormClass} .gform_page.intro .gform_page_footer`);
+            const minutesText = getCaldText('form_validation_message.only_2_minutes', 'It only takes 2 minutes!');
+            footerIntroPage.prepend('<span style="display:inline-block;font-size:18px;font-weight:600;">' + escapeHtml(minutesText) + '</span>');
+        }, 300);
     }
 
     // Update on Gravity Forms AJAX events
@@ -250,6 +292,9 @@ jQuery(function ($) {
             }
             setTimeout(function () {
                 $(`form.${lhcFormClass}`).removeClass('loading');
+                let footerIntroPage = $(`form.${lhcFormClass} .gform_page.intro .gform_page_footer`);
+                const minutesText = getCaldText('form_validation_message.only_2_minutes', 'It only takes 2 minutes!');
+                footerIntroPage.prepend('<span style="display:inline-block;font-size:18px;font-weight:600;">' + escapeHtml(minutesText) + '</span>');
             }, 300);
 
             setTimeout(function () {
@@ -343,7 +388,8 @@ jQuery(function ($) {
                 pageFooter.hide();
                 AcceptableNonVicMess.hide();
                 if (parentField.find('.validation_message').length === 0) {
-                    parentField.append('<div class="gfield_description validation_message gfield_validation_message">Please enter a valid postcode.</div>');
+                    const validationText = getCaldText('form_validation_message.validation_postcode', 'Please enter a valid postcode.');
+                    parentField.append('<div class="gfield_description validation_message gfield_validation_message">' + escapeHtml(validationText) + '</div>');
                 }
             }, 800);
         }
@@ -389,7 +435,8 @@ jQuery(function ($) {
                 nextButton.prop('disabled', true);
                 // Prevent multiple validation messages
                 if (parentField.find('.validation_message').length === 0) {
-                    parentField.append('<div class="gfield_description validation_message gfield_validation_message">Please provide your full name - example: Jo Smith</div>');
+                    const validationText = getCaldText('form_validation_message.validation_name', 'Please provide your full name - example: Jo Smith');
+                    parentField.append('<div class="gfield_description validation_message gfield_validation_message">' + escapeHtml(validationText) + '</div>');
                 }
             } else {
                 nextButton.prop('disabled', false);
@@ -420,7 +467,8 @@ jQuery(function ($) {
                 nextButton.prop('disabled', true);
                 // Prevent multiple validation messages
                 if (parentField.find('.validation_message').length === 0) {
-                    parentField.append('<div class="gfield_description validation_message gfield_validation_message">Please provide a valid email address - example: name@gmail.com</div>');
+                    const validationText = getCaldText('form_validation_message.validation_email', 'Please provide a valid email address - example: name@gmail.com');
+                    parentField.append('<div class="gfield_description validation_message gfield_validation_message">' + escapeHtml(validationText) + '</div>');
                 }
             } else {
                 nextButton.prop('disabled', false);
@@ -449,7 +497,8 @@ jQuery(function ($) {
             nextButton.prop('disabled', true);
             // Prevent multiple validation messages
             if (parentField.find('.validation_message').length === 0) {
-                parentField.append('<div class="gfield_description validation_message gfield_validation_message">Please select an option.</div>');
+                const validationText = getCaldText('form_validation_message.validation_questions', 'Please select an option.');
+                parentField.append('<div class="gfield_description validation_message gfield_validation_message">' + escapeHtml(validationText) + '</div>');
             }
         } else {
             nextButton.prop('disabled', false);
@@ -534,7 +583,7 @@ jQuery(function ($) {
         if (value || value.trim().length > 0) {
             if (parentField.hasClass('diabetes') && value.toLowerCase() === 'yes') {
                 setTimeout(function () {
-                    window.open('https://www.diabetesvic.org.au/', '_blank');
+                    window.open(dvRedirectUrl, '_blank');
                     return; // Stop further processing after redirect
                 }, 450);
             }
@@ -769,7 +818,7 @@ jQuery(function ($) {
                     'hidden_field',
                     'postcode',
                     'name',
-                    'mail',
+                    'email',
                     'confirm-contact',
                 ];
 

@@ -1013,6 +1013,20 @@ function life_enqueue_main() {
   wp_localize_script('life-main-js', 'lifeAjax', array(
     'ajaxurl' => admin_url('admin-ajax.php')
   ));
+  
+  // Localize CALD languages and gravity form ID for health check page
+  if (is_page_template('page-templates/life-health-check.php')) {
+    $post_id = get_the_ID();
+    $cald_languages = get_field('cald_languages', $post_id);
+    $gravity_form_id = get_field('gravity_form_id', $post_id) ?: 2;
+    $dv_redirect_url = get_field('diabetes_victoria_redirect_url', 'options') ?: 'https://www.diabetesvic.org.au/';
+    
+    wp_localize_script('life-main-js', 'lifeHealthCheck', array(
+      'gravityFormId' => $gravity_form_id,
+      'caldLanguages' => $cald_languages ?: array(),
+      'dvRedirectUrl' => $dv_redirect_url,
+    ));
+  }
 }
 add_action('wp_enqueue_scripts', 'life_enqueue_main');
 

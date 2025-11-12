@@ -443,12 +443,6 @@ body {
           &.intro {
             .gform_page_footer {
               display: none;
-              &::before {
-                content: "It only takes 2 minutes!";
-                display: inline-block;
-                font-size: 18px;
-                font-weight: 600;
-              }
             }
           }
         }
@@ -910,6 +904,7 @@ body {
       }
 
       table {
+        margin-top: 20px;
         width: 100%;
         border-collapse: collapse;
         font-family: "Poppins";

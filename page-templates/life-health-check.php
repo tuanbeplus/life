@@ -4,26 +4,38 @@
  */
 
 setup_postdata($post);
-get_header(null, ['bodyClass' => 'life-health-check']);
+$page_lang = pageLang()->lang ?? 'en';
+get_header(null, ['bodyClass' => 'life-health-check ' . $page_lang ]);
 $description = get_field('lhc_desc', 'option');
 $languages = get_field('lhc_languages', 'option');
-$non_vic_postcodes = get_field('non_vic_postcodes', 'option');
+$non_vic_postcodes = get_field('non_vic_postcodes', 'option'); 
 $share_url = get_permalink();
+
+// Get CALD languages and gravity form ID
+$cald_languages = get_field('cald_languages', get_the_ID());
+$gravity_form_id = get_field('gravity_form_id', get_the_ID()) ?: 2;
+
+// Helper function to get CALD text with fallback
+function get_cald_text($key, $default = '') {
+    global $cald_languages;
+    if (empty($cald_languages)) return $default;
+    $keys = explode('.', $key);
+    $value = $cald_languages;
+    foreach ($keys as $k) {
+        if (isset($value[$k])) {
+            $value = $value[$k];
+        } else {
+            return $default;
+        }
+    }
+    return apply_filters('the_brand', $value) ?: apply_filters('the_brand', $default); 
+}
 ?>
 <div class="page">
     <section class="ss-hero">
         <?php echo the_post_thumbnail( 'full' ); ?>
         <div class="page-tilte center-frame">
-            <?php
-            $the_title = get_the_title();
-            if (strpos($the_title, 'Life!') !== false) {
-                // Replace 'Life!' with <em>Life!</em>
-                $the_title_em = str_replace('Life!', '<em>Life!</em>', $the_title);
-                echo "<h1>{$the_title_em}</h1>";
-            } else {
-                echo "<h1>{$the_title}</h1>";
-            }
-            ?>
+            <h1><?php echo apply_filters('the_brand', get_the_title()) ?></h1>
         </div>
     </section>
     <section class="ss-health-check center-frame">
@@ -32,14 +44,13 @@ $share_url = get_permalink();
             <div class="sidebar">
                 <!-- Get Started Section -->
                 <div class="get-started-section">
-                    <h2 class="heading">Get started</h2>
+                    <h2 class="heading"><?php echo get_cald_text('main_heading.get_started', 'Get started'); ?></h2>
                     <?php if (!empty($description)): ?>
-                        <p class="desc"><?php echo $description ?></p>
+                        <p class="desc"><?php echo get_cald_text('description', $description); ?></p>
                     <?php endif; ?>
-                    
                     <div class="languages field">
-                        <p class="field-label">Choose language</p>
-                        <p class="field-label mobile">Choose language</p>
+                        <p class="field-label"><?php echo get_cald_text('choose_language', 'Choose language'); ?></p>
+                        <p class="field-label mobile"><?php echo get_cald_text('choose_language', 'Choose language'); ?></p>
                         <ul class="language-list field-list">
                         <?php 
                         $current_url = $_SERVER['REQUEST_URI'];
@@ -58,42 +69,39 @@ $share_url = get_permalink();
                         </ul>
                     </div>
                 </div>
-                
                 <!-- Progress Checklist Section -->
                 <div class="progress-checklist field">
-                    <p class="field-label mobile">Progress</p>
+                    <p class="field-label mobile"><?php echo get_cald_text('progress_heading', 'Progress'); ?></p>
                     <ul class="progress-steps field-list">
                         <li class="progress-step intro">
-                            <span class="step-text">Introduction</span>
+                            <span class="step-text"><?php echo get_cald_text('introduction', 'Introduction'); ?></span>
                         </li>
                         <li class="progress-step details">
-                            <span class="step-text">Your details</span>
+                            <span class="step-text"><?php echo get_cald_text('your_details', 'Your details'); ?></span>
                         </li>
                         <li class="progress-step questions">
-                            <span class="step-text"><em>Life!</em> Health Check questions</span>
+                            <span class="step-text"><?php echo get_cald_text('life_health_check_questions', 'Health Check questions'); ?></span>
                         </li>
                         <li class="progress-step results">
-                            <span class="step-text">Results</span>
+                            <span class="step-text"><?php echo get_cald_text('results', 'Results'); ?></span>
                         </li>
                     </ul>
                 </div>
-                
                 <!-- Contact Information Section -->
                 <div class="get-in-touch field">
-                    <p class="contact-text">Need help? Call our friendly team on</p>
+                    <p class="contact-text"><?php echo get_cald_text('contact_copy', 'Need help? Call our friendly team on'); ?></p>
                     <a href="tel:13137475" class="phone-number"><span class="phone-digits risk-13-wcag">13 RISK </span>(13 74 75)</a>
                 </div>
             </div>
             <div class="form-wrapper">
                 <div class="non_vic_postcodes-block" style="display:none;">
-                    <input id="lhc_user_email" type="hidden" value="tom@ysnstudios.com">
+                    <input id="lhc_user_email" type="hidden" value="">
                     <input id="non_vic_postcodes_json" type="hidden" value="<?php echo esc_attr( $non_vic_postcodes ); ?>">
                 </div>
-                <?php echo do_shortcode( '[gravityform id="2" title="false" description="false" ajax="true"]' ); ?>
+                <?php echo do_shortcode( '[gravityform id="' . esc_attr($gravity_form_id) . '" title="false" description="false" ajax="true"]' ); ?>
                 <div class="share-wrapper"><inline-dialog-share></inline-dialog-share></div>
             </div>
         </div>
-            
     </section>
 </div>
 
@@ -127,5 +135,4 @@ $share_url = get_permalink();
 ></inline-dialog-share-modal>
 
 <?php
-
 get_footer();

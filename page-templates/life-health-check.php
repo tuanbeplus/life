@@ -80,7 +80,7 @@ function get_cald_text($key, $default = '') {
                             <span class="step-text"><?php echo get_cald_text('your_details', 'Your details'); ?></span>
                         </li>
                         <li class="progress-step questions">
-                            <span class="step-text"><?php echo get_cald_text('life_health_check_questions', 'Health Check questions'); ?></span>
+                            <span class="step-text"><?php echo get_cald_text('life_health_check_questions', 'Life! health check questions'); ?></span>
                         </li>
                         <li class="progress-step results">
                             <span class="step-text"><?php echo get_cald_text('results', 'Results'); ?></span>
@@ -90,7 +90,7 @@ function get_cald_text($key, $default = '') {
                 <!-- Contact Information Section -->
                 <div class="get-in-touch field">
                     <p class="contact-text"><?php echo get_cald_text('contact_copy', 'Need help? Call our friendly team on'); ?></p>
-                    <a href="tel:13137475" class="phone-number"><span class="phone-digits risk-13-wcag">13 RISK </span>(13 74 75)</a>
+                    <a href="tel:137475" class="phone-number"><span class="phone-digits risk-13-wcag">13 74 75</span></a>
                 </div>
             </div>
             <div class="form-wrapper">

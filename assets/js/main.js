@@ -4,27 +4,31 @@ jQuery(function ($) {
     'use strict';
 
     // Get localized CALD languages and gravity form ID
-    const lhcFormId = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.gravityFormId) 
-        ? lifeHealthCheck.gravityFormId 
+    const lhcFormId = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.gravityFormId)
+        ? lifeHealthCheck.gravityFormId
         : 2;
     const lhcFormClass = 'life-health-check-form';
-    const caldLanguages = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.caldLanguages) 
-        ? lifeHealthCheck.caldLanguages 
+    const caldLanguages = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.caldLanguages)
+        ? lifeHealthCheck.caldLanguages
         : {};
 
-    const dvRedirectUrl = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.dvRedirectUrl) 
-        ? lifeHealthCheck.dvRedirectUrl 
-        : "https://www.diabetesvic.org.au/";    
+    const dvRedirectUrl = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.dvRedirectUrl)
+        ? lifeHealthCheck.dvRedirectUrl
+        : "https://www.diabetesvic.org.au/";
+
+    const trackingEventPrefix = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.trackingEventPrefix)
+        ? lifeHealthCheck.trackingEventPrefix
+        : "English";
 
     // Helper function to get CALD text with fallback
     function getCaldText(key, defaultValue) {
         if (!caldLanguages || Object.keys(caldLanguages).length === 0) {
             return defaultValue;
         }
-        
+
         const keys = key.split('.');
         let value = caldLanguages;
-        
+
         for (let k of keys) {
             if (value && typeof value === 'object' && value[k] !== undefined) {
                 value = value[k];
@@ -32,7 +36,7 @@ jQuery(function ($) {
                 return defaultValue;
             }
         }
-        
+
         return value || defaultValue;
     }
 
@@ -41,6 +45,185 @@ jQuery(function ($) {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    // Centralized validation function for details page (name + email + confirm-contact checkbox)
+    function validateDetailsPageFields(currentPage) {
+        const firstNameField = currentPage.find('.gfield.first_name');
+        const lastNameField = currentPage.find('.gfield.last_name');
+        const emailField = currentPage.find('.gfield.email');
+        const confirmField = currentPage.find('.gfield.confirm-contact');
+        const nextButton = currentPage.find('.gform_next_button');
+
+        // Check if all three fields exist on this page
+        if (!firstNameField.length || !lastNameField.length || !emailField.length || !confirmField.length || !nextButton.length) {
+            return; // Not the details page, skip
+        }
+
+        // Check validation status
+        const firstNameValid = firstNameField.hasClass('is_valid');
+        const lastNameValid = lastNameField.hasClass('is_valid');
+        const emailValid = emailField.hasClass('is_valid');
+        const confirmChecked = confirmField.find('input[type=checkbox]:checked').length > 0;
+
+        // Enable next button only if all three conditions are met
+        const allValid = firstNameValid && lastNameValid && emailValid && confirmChecked;
+        nextButton.prop('disabled', !allValid);
+    }
+
+    // Function to fill waist-result field based on visible waist-table and q11 select value
+    function fillWaistResult() {
+        const $q11Select = $(`form.${lhcFormClass} .gfield.q11 select`);
+        const $waistResultAsiaField = $(`form.${lhcFormClass} .gfield.waist-result-asia-ab input[type="text"]`);
+        const $waistResultOtherField = $(`form.${lhcFormClass} .gfield.waist-result-other input[type="text"]`);
+
+        const $waistMapAsiaAb = {
+            'Less than 90cm': 'Less than 90cm',
+            'Less than 80cm': 'Less than 80cm',
+            '90cm - 100cm': '90 - 100cm',
+            '80cm - 90cm': '80-90cm',
+            'More than 100cm': 'More than 100cm',
+            'More than 90cm': 'More than 90cm',
+        };
+        const $waistMapOther = {
+            'Less than 102cm': 'Less than 102 cm',
+            'Less than 88cm': 'Less than 88 cm',
+            '102cm - 110cm': '102-110cm',
+            '88cm - 100cm': '88-100cm',
+            'More than 110cm': 'More than 110cm',
+            'More than 100cm': 'More than 100cm',
+        };
+
+        // Check if q11 and at least one waist result field exist
+        if (!$q11Select.length || (!$waistResultAsiaField.length && !$waistResultOtherField.length)) {
+            console.log('⚠️ Q11 select or waist-result fields not found');
+            return;
+        }
+
+        // Get q3 and q4 values to determine which field to fill
+        const $q3 = $(`form.${lhcFormClass} .gfield.q3 input[type=radio]:checked`);
+        const $q4Select = $(`form.${lhcFormClass} .gfield.q4 select`);
+
+        const q3Value = $q3.val() ? $q3.val().toString().trim().toLowerCase() : '';
+        const q4Value = $q4Select.val() ? $q4Select.val().toString().trim().toLowerCase() : '';
+
+        // Determine which field to fill: asia-ab if q3='yes' OR q4='Asia', otherwise other
+        const isAsiaAb = q3Value === 'yes' || q4Value === 'asia';
+        const $targetField = isAsiaAb ? $waistResultAsiaField : $waistResultOtherField;
+        const $otherField = isAsiaAb ? $waistResultOtherField : $waistResultAsiaField;
+
+        // Get selected value from q11 (e.g., "range1", "range2", "range3")
+        const selectedRange = $q11Select.val();
+
+        if (!selectedRange) {
+            // Clear both fields if no selection
+            if ($waistResultAsiaField.length) $waistResultAsiaField.val('');
+            if ($waistResultOtherField.length) $waistResultOtherField.val('');
+            return;
+        }
+
+        // Extract column number from range value (range1 -> 1, range2 -> 2, range3 -> 3)
+        const columnMatch = selectedRange.match(/range(\d+)/);
+        if (!columnMatch) {
+            console.log('⚠️ Invalid range format:', selectedRange);
+            return;
+        }
+        const rangeNumber = parseInt(columnMatch[1]);
+
+        // Find visible waist-table
+        const $visibleTable = $('table.waist-table:visible').first();
+
+        if (!$visibleTable.length) {
+            console.log('⚠️ No visible waist-table found');
+            if ($waistResultAsiaField.length) $waistResultAsiaField.val('');
+            if ($waistResultOtherField.length) $waistResultOtherField.val('');
+            return;
+        }
+
+        // Detect table type: desktop (.-desktop) or mobile (.-mobile)
+        const isDesktop = $visibleTable.hasClass('-desktop');
+        const isMobile = $visibleTable.hasClass('-mobile');
+
+        let waistText = '';
+
+        if (isDesktop) {
+            // DESKTOP TABLE STRUCTURE:
+            // <thead><tr><th>Range</th><th>1</th><th>2</th><th>3</th></tr></thead>
+            // <tbody><tr><td>Waist (cm)</td><td>Less than 90cm</td><td>90 — 100cm</td><td>More than 100cm</td></tr></tbody>
+
+            const $waistRow = $visibleTable.find('tbody tr').filter(function () {
+                return $(this).find('td').first().text().trim().toLowerCase().includes('waist');
+            });
+
+            if (!$waistRow.length) {
+                console.log('⚠️ Waist row not found in desktop table');
+                return;
+            }
+
+            // Get the td at column index (rangeNumber 1 = index 1, etc.)
+            const $targetCell = $waistRow.find('td').eq(rangeNumber);
+
+            if (!$targetCell.length) {
+                console.log('⚠️ Column not found in desktop table');
+                return;
+            }
+
+            waistText = $targetCell.text().trim();
+
+        } else if (isMobile) {
+            // MOBILE TABLE STRUCTURE:
+            // <tbody>
+            //   <tr><th>Waist (cm)</th><th>Range</th></tr>
+            //   <tr><td>Less than 90cm</td><td>1</td></tr>
+            //   <tr><td>90 — 100cm</td><td>2</td></tr>
+            //   <tr><td>More than 100cm</td><td>3</td></tr>
+            // </tbody>
+
+            // Find the row where the second column (Range) matches rangeNumber
+            const $targetRow = $visibleTable.find('tbody tr').filter(function () {
+                const $cells = $(this).find('td');
+                if ($cells.length >= 2) {
+                    const rangeValue = $cells.eq(1).text().trim();
+                    return rangeValue === rangeNumber.toString();
+                }
+                return false;
+            });
+
+            if (!$targetRow.length) {
+                console.log('⚠️ Range row not found in mobile table');
+                return;
+            }
+
+            // Get the first column (waist value)
+            const $waistCell = $targetRow.find('td').first();
+            waistText = $waistCell.text().trim();
+
+        } else {
+            console.log('⚠️ Table type not recognized (no -desktop or -mobile class)');
+            return;
+        }
+
+        // Map waistText using the appropriate mapping object
+        const waistMap = isAsiaAb ? $waistMapAsiaAb : $waistMapOther;
+        const mappedValue = waistMap[waistText] || waistText; // Use mapped value if found, otherwise use original text
+
+        // Fill the appropriate waist-result field and clear the other
+        if ($targetField.length) {
+            $targetField.val(mappedValue);
+        }
+        if ($otherField.length) {
+            $otherField.val('');
+        }
+
+        // console.log('✅ Waist result filled:', {
+        //     tableType: isDesktop ? 'desktop' : 'mobile',
+        //     selectedRange: selectedRange,
+        //     rangeNumber: rangeNumber,
+        //     waistText: waistText,
+        //     isAsiaAb: isAsiaAb,
+        //     q3Value: q3Value,
+        //     q4Value: q4Value
+        // });
     }
 
     // Function to update radio button labels with first character
@@ -185,7 +368,7 @@ jQuery(function ($) {
         const isFemale = selectedQ1 === 'female';
 
         // Target q12 choices by normalized input value: all lowercase, hyphenated
-        const targetValues = ['gestational-diabetes', 'polucystic-ovarian-syndrome'];
+        const targetValues = ['gestational-diabetes', 'polycystic-ovarian-syndrome'];
 
         $q12.find('input[type=checkbox]').each(function () {
             const $input = $(this);
@@ -199,7 +382,7 @@ jQuery(function ($) {
                 } else {
                     // If currently checked, uncheck before hide
                     if ($input.prop('checked')) {
-                        $input.prop('checked', false).trigger('change');
+                        $input.prop('checked', false); // Don't trigger change to prevent recursion
                     }
                     $choice.hide();
                 }
@@ -212,12 +395,35 @@ jQuery(function ($) {
         updateRadioButtonLabels();
         updateSidebarProgressSteps();
         updateQ12OptionsVisibility();
-        setTimeout(function () {
-            let footerIntroPage = $(`form.${lhcFormClass} .gform_page.intro .gform_page_footer`);
-            const minutesText = getCaldText('form_validation_message.only_2_minutes', 'It only takes 2 minutes!');
-            footerIntroPage.prepend('<span style="display:inline-block;font-size:18px;font-weight:600;">' + escapeHtml(minutesText) + '</span>');
-        }, 300);
+
+        let hasHCViewed = false;
+        if (!hasHCViewed) {
+            window.dataLayer = window.dataLayer || [];
+            window.dataLayer.push({
+                event: `${trackingEventPrefix}_HC`,
+            });
+            hasHCViewed = true;
+        }
     }
+
+    // Auto-trigger debug function when select, radio, or checkbox fields change
+    $(document).on('change', `form.${lhcFormClass} select, form.${lhcFormClass} input[type="radio"], form.${lhcFormClass} input[type="checkbox"]`, function () {
+        const $changedField = $(this).closest('.gfield');
+
+        // Small delay to let conditional logic render
+        setTimeout(function () {
+            // Only call fillWaistResult if the changed field is q1, q3, q4, or q11
+            if ($changedField.hasClass('q1') || $changedField.hasClass('q3') ||
+                $changedField.hasClass('q4') || $changedField.hasClass('q11')) {
+                fillWaistResult();
+            }
+
+            // Call updateQ12OptionsVisibility when q1 (gender) changes
+            if ($changedField.hasClass('q1')) {
+                updateQ12OptionsVisibility();
+            }
+        }, 300);
+    });
 
     // Update on Gravity Forms AJAX events
     $(document).on('gform_confirmation_loaded', function () {
@@ -235,6 +441,28 @@ jQuery(function ($) {
             }
             if ($('.form-wrapper .thank-you-mess').length === 0) {
                 $('.form-wrapper .share-wrapper').show();
+            }
+
+            const ausdriskResult = $('input#ausdrisk-result').val().trim();
+
+            window.dataLayer = window.dataLayer || [];
+            window.dataLayer.push({
+                event: `${trackingEventPrefix}_Results`,
+            });
+
+            if (ausdriskResult === 'eligible') {
+                window.dataLayer.push({
+                    event: `${trackingEventPrefix}_Result_Eligible`,
+                });
+                // Add hash to URL
+                window.location.hash = 'result-eligible';
+            }
+            else {
+                window.dataLayer.push({
+                    event: `${trackingEventPrefix}_Result_Ineligible`,
+                });
+                // Add hash to URL
+                window.location.hash = 'result-ineligible';
             }
         }
     });
@@ -290,12 +518,6 @@ jQuery(function ($) {
                     scrollTop: Math.max($formWrapper.offset().top - 220, 0)
                 }, 400, 'swing');
             }
-            setTimeout(function () {
-                $(`form.${lhcFormClass}`).removeClass('loading');
-                let footerIntroPage = $(`form.${lhcFormClass} .gform_page.intro .gform_page_footer`);
-                const minutesText = getCaldText('form_validation_message.only_2_minutes', 'It only takes 2 minutes!');
-                footerIntroPage.prepend('<span style="display:inline-block;font-size:18px;font-weight:600;">' + escapeHtml(minutesText) + '</span>');
-            }, 300);
 
             setTimeout(function () {
                 // Ensure proper selection of current visible intro page and show footer only if it exists
@@ -304,7 +526,7 @@ jQuery(function ($) {
                 if ($introPage.length && $postcodeField.hasClass('is_valid')) {
                     let $pageFooter = $introPage.find('.gform_page_footer');
                     if ($pageFooter.length) {
-                        $pageFooter.css('display', 'flex');
+                        $pageFooter.addClass('active');
                     }
                 }
             }, 500);
@@ -343,138 +565,168 @@ jQuery(function ($) {
         }
     });
 
-    // On change event for postcode field in .life-health-check-form
-    $(document).on('change input blur', `form.${lhcFormClass} .gfield.postcode input[type=number]`, function () {
-        if (!$(this).closest('.gfield').hasClass('gfield_contains_required')) {
-            return;
-        }
-        let $input = $(this);
-        let currentPage = $input.closest('.gform_page');
-        let parentField = $input.closest('.gfield');
-        let nextButton = currentPage.find('.gform_next_button');
-        let pageFooter = currentPage.find('.gform_page_footer');
-        let value = $.trim($input.val());
-        let AcceptableNonVicMess = currentPage.find('.gfield.acceptable-non-vic-regions')
-
-        // Get non-Victorian postcodes from hidden input
-        let nonVicPostcodes = [];
-        const nonVicInput = $('#non_vic_postcodes_json');
-        if (nonVicInput.length && nonVicInput.val()) {
-            try {
-                nonVicPostcodes = JSON.parse(nonVicInput.val());
-            } catch (e) {
-                console.warn('Invalid JSON in non_vic_postcodes_json:', e);
-            }
-        }
-
-        // Check if postcode is valid Australian postcode (4 digits)
-        let isValidFormat = /^[0-9]{4}$/.test(value);
-        // Check if postcode is Victorian (3000-3999 and 8000-8999) or in acceptable non-Victorian list
-        let isVicPostcode = /^(3[0-9]{3}|8[0-9]{3})$/.test(value);
-        let isAcceptableNonVic = nonVicPostcodes.includes(value);
-
-        // Valid: is 4 digits & (Vic or acceptable)
-        let valid = isValidFormat && (isVicPostcode || isAcceptableNonVic);
-
-        parentField.removeClass('gfield_error is_invalid');
-        parentField.find('.validation_message').remove();
-
-        // Case 1: Not 4 digits
-        if (!isValidFormat) {
-            AcceptableNonVicMess.hide();
-            setTimeout(function () {
-                parentField.addClass('gfield_error is_invalid').removeClass('is_valid');
-                nextButton.prop('disabled', true);
-                pageFooter.hide();
-                AcceptableNonVicMess.hide();
-                if (parentField.find('.validation_message').length === 0) {
-                    const validationText = getCaldText('form_validation_message.validation_postcode', 'Please enter a valid postcode.');
-                    parentField.append('<div class="gfield_description validation_message gfield_validation_message">' + escapeHtml(validationText) + '</div>');
-                }
-            }, 800);
-        }
-        // Case 2: 4 digits but not valid (not Vic and not acceptable)
-        else if (!valid) {
-            setTimeout(function () {
-                parentField.removeClass('gfield_error is_valid is_invalid');
-                nextButton.prop('disabled', true);
-                pageFooter.hide();
-                AcceptableNonVicMess.slideDown(200);
-                parentField.find('.validation_message').remove(); // Remove any previous validation message
-            }, 800);
-        }
-        // Valid postcode (Vic or acceptable)
-        else {
-            AcceptableNonVicMess.hide();
-            setTimeout(function () {
-                nextButton.prop('disabled', false);
-                pageFooter.slideDown(200).css('display', 'flex');
-                AcceptableNonVicMess.hide();
-                parentField.removeClass('gfield_error is_invalid').addClass('is_valid');
-                parentField.find('.validation_message').remove();
-            }, 800);
-        }
+    $(document).on('click', `form.${lhcFormClass}  input[type=submit]`, function () {
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+            event: `${trackingEventPrefix}_Check_Score`,
+        });
+        // Add hash to URL
+        window.location.hash = 'check-score';
     });
 
-    // On change event for name field in .life-health-check-form
-    $(document).on('change input blur', `form.${lhcFormClass} .gfield.name input[type=text]`, function () {
+    let postcodeTimer = null;
+
+    $(document).on('input', `form.${lhcFormClass} .gfield.postcode input[type=number]`, function () {
+        if (!$(this).closest('.gfield').hasClass('gfield_contains_required')) {
+            return;
+        }
+        const $input = $(this);
+        const value = $.trim($input.val());
+        const parentField = $input.closest('.gfield');
+        const currentPage = $input.closest('.gform_page');
+        const nextButton = currentPage.find('.gform_next_button');
+        const pageFooter = currentPage.find('.gform_page_footer');
+        const AcceptableNonVicMess = currentPage.find('.gfield.acceptable-non-vic-regions');
+
+        // Clear previous timer
+        if (postcodeTimer) {
+            clearTimeout(postcodeTimer);
+        }
+
+        // Reset UI immediately while typing
+        parentField.removeClass('gfield_error is_invalid is_valid');
+        parentField.find('.validation_message').remove();
+        AcceptableNonVicMess.hide();
+        nextButton.prop('disabled', true);
+        pageFooter.hide();
+
+        // Do NOT validate until user finishes typing 4 digits
+        if (!/^\d{0,4}$/.test(value) || value.length < 4) {
+            return;
+        }
+
+        postcodeTimer = setTimeout(function () {
+            // Load acceptable non-VIC postcodes
+            let nonVicPostcodes = [];
+            const nonVicInput = $('#non_vic_postcodes_json');
+            if (nonVicInput.length && nonVicInput.val()) {
+                try {
+                    nonVicPostcodes = JSON.parse(nonVicInput.val());
+                } catch (e) {
+                    console.warn('Invalid JSON in non_vic_postcodes_json:', e);
+                }
+            }
+
+            const isVicPostcode = /^(3\d{3}|8\d{3})$/.test(value);
+            const isAcceptableNonVic = nonVicPostcodes.includes(value);
+
+            // ❌ 4 digits but not valid
+            if (!isVicPostcode && !isAcceptableNonVic) {
+                AcceptableNonVicMess.slideDown(200);
+                parentField.addClass('is_invalid');
+                nextButton.prop('disabled', true);
+                pageFooter.hide();
+                return;
+            }
+
+            // ✅ Valid postcode
+            parentField.addClass('is_valid');
+            nextButton.prop('disabled', false);
+            pageFooter.slideDown(200).css('display', 'flex');
+            AcceptableNonVicMess.hide();
+
+        }, 400); // debounce time
+    }
+    );
+
+
+    // On change event for Full Name field in .life-health-check-form
+    $(document).on('blur', `form.${lhcFormClass} .gfield.first_name input[type=text], form.${lhcFormClass} .gfield.last_name input[type=text]`, function () {
         if (!$(this).closest('.gfield').hasClass('gfield_contains_required')) {
             return;
         }
         let $input = $(this);
         let currentPage = $input.closest('.gform_page');
         let parentField = $input.closest('.gfield');
-        let nextButton = currentPage.find('.gform_next_button');
         let value = $.trim($input.val());
-
-        nextButton.prop('disabled', true);
 
         setTimeout(function () {
-            if (!value || value.trim().length === 0) {
-                parentField.addClass('gfield_error is_invalid').removeClass('is_valid');
-                nextButton.prop('disabled', true);
-                // Prevent multiple validation messages
+
+            // Regex: single name with valid characters, length 2–50
+            const nameRegex = /^[A-Za-zÀ-ỹ''\-\s]{2,50}$/;
+
+            let isValid = nameRegex.test(value);
+
+            if (!isValid) {
+                parentField
+                    .addClass('gfield_error is_invalid')
+                    .removeClass('is_valid');
+
                 if (parentField.find('.validation_message').length === 0) {
-                    const validationText = getCaldText('form_validation_message.validation_name', 'Please provide your full name - example: Jo Smith');
-                    parentField.append('<div class="gfield_description validation_message gfield_validation_message">' + escapeHtml(validationText) + '</div>');
+                    let validationText = '';
+                    if (parentField.hasClass('first_name')) {
+                        validationText = getCaldText(
+                            'form_validation_message.validation_first_name',
+                            'Please provide your first name - example: Jo'
+                        );
+                    } else {
+                        validationText = getCaldText(
+                            'form_validation_message.validation_last_name',
+                            'Please provide your last name - example: Smith'
+                        );
+                    }
+
+                    parentField.find('.ginput_container').append(
+                        '<div class="gfield_description validation_message gfield_validation_message">' +
+                        escapeHtml(validationText) +
+                        '</div>'
+                    );
                 }
+
             } else {
-                nextButton.prop('disabled', false);
-                parentField.removeClass('gfield_error is_invalid').addClass('is_valid').find('.validation_message').remove();
+                parentField
+                    .removeClass('gfield_error is_invalid')
+                    .addClass('is_valid')
+                    .find('.validation_message')
+                    .remove();
             }
-        }, 1000);
+
+            // Use centralized validation for details page
+            validateDetailsPageFields(currentPage);
+
+        }, 300);
     });
 
+
     // On change event for email field in .life-health-check-form with email validation
-    $(document).on('change input blur', `form.${lhcFormClass} .gfield.email input[type=email]`, function () {
+    $(document).on('blur', `form.${lhcFormClass} .gfield.email input[type=email]`, function () {
         if (!$(this).closest('.gfield').hasClass('gfield_contains_required')) {
             return;
         }
         let $input = $(this);
         let currentPage = $input.closest('.gform_page');
         let parentField = $input.closest('.gfield');
-        let nextButton = currentPage.find('.gform_next_button');
         let value = $.trim($input.val());
         // Basic email validation regex
         let emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         let isEmailValid = emailPattern.test(value);
 
-        nextButton.prop('disabled', true);
-
         setTimeout(function () {
             if (!value || value.trim().length === 0 || !isEmailValid) {
                 parentField.addClass('gfield_error is_invalid').removeClass('is_valid');
-                nextButton.prop('disabled', true);
                 // Prevent multiple validation messages
                 if (parentField.find('.validation_message').length === 0) {
                     const validationText = getCaldText('form_validation_message.validation_email', 'Please provide a valid email address - example: name@gmail.com');
-                    parentField.append('<div class="gfield_description validation_message gfield_validation_message">' + escapeHtml(validationText) + '</div>');
+                    parentField.find('.ginput_container').append('<div class="gfield_description validation_message gfield_validation_message">' + escapeHtml(validationText) + '</div>');
                 }
             } else {
-                nextButton.prop('disabled', false);
                 parentField.removeClass('gfield_error is_invalid').addClass('is_valid').find('.validation_message').remove();
             }
-        }, 1000);
+
+            // Use centralized validation for details page
+            validateDetailsPageFields(currentPage);
+
+        }, 300);
 
         $('input#lhc_user_email').val(value);
     });
@@ -498,7 +750,7 @@ jQuery(function ($) {
             // Prevent multiple validation messages
             if (parentField.find('.validation_message').length === 0) {
                 const validationText = getCaldText('form_validation_message.validation_questions', 'Please select an option.');
-                parentField.append('<div class="gfield_description validation_message gfield_validation_message">' + escapeHtml(validationText) + '</div>');
+                parentField.find('.ginput_container_select').append('<div class="gfield_description validation_message gfield_validation_message">' + escapeHtml(validationText) + '</div>');
             }
         } else {
             nextButton.prop('disabled', false);
@@ -543,20 +795,18 @@ jQuery(function ($) {
         let $changed = $(this);
         let parentField = $changed.closest('.gfield');
         let currentPage = parentField.closest('.gform_page');
-        let nextButton = currentPage.find('.gform_next_button');
         let $checkboxes = parentField.find('input[type=checkbox]');
 
-        // Find the "None of the below" checkbox (case-insensitive)
-        let $noneCheckbox = $checkboxes.filter(function () {
-            return $.trim($(this).val()).toLowerCase() === 'none';
-        });
-
-        if ($changed.prop('checked')) {
+        if (parentField.hasClass('q12')) {
+            // Find the "None of the below" checkbox (case-insensitive)
+            let $noneCheckbox = $checkboxes.filter(function () {
+                return $.trim($(this).val()).toLowerCase() === 'none';
+            });
             if ($changed.is($noneCheckbox)) {
                 // If "None of the below" is checked, uncheck all others
                 $checkboxes.not($noneCheckbox).each(function () {
                     if ($(this).prop('checked')) {
-                        $(this).prop('checked', false).trigger('change');
+                        $(this).prop('checked', false); // Don't trigger change to prevent recursion
                     }
                 });
             } else {
@@ -565,12 +815,8 @@ jQuery(function ($) {
             }
         }
         if (parentField.hasClass('confirm-contact')) {
-            if ($changed.prop('checked')) {
-                nextButton.prop('disabled', false);
-            }
-            else {
-                nextButton.prop('disabled', true);
-            }
+            // Use centralized validation for details page
+            validateDetailsPageFields(currentPage);
         }
     });
 
@@ -603,75 +849,38 @@ jQuery(function ($) {
         }
     });
 
-    // Enhanced listener for analytics/hash update on field changes
-    $(document).on('change input', '.gfield input, .gfield select', function () {
-        const $input = $(this);
-        const $parentField = $input.closest('.gfield');
-        const $currentPage = $input.closest('.gform_page');
-
-        // Update dependent q12 visibility when q1 changes
-        if ($parentField.hasClass('q1')) {
-            updateQ12OptionsVisibility();
+    let hasStartedHC = false;
+    // On change event for radio fields
+    $(document).on('click', `form.${lhcFormClass} .gform_page.intro .gform_next_button`, function () {
+        // Prevent duplicate firing
+        if (hasStartedHC) {
+            return;
         }
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+            event: `${trackingEventPrefix}_StartHC`,
+        });
+        // Add hash to URL
+        window.location.hash = 'start-health-check';
 
-        // Improved: Get section and field name dynamically
-        const sectionMap = ['intro', 'details'];
-        let sectionName = 'questions';
-        for (let section of sectionMap) {
-            if ($currentPage.hasClass(section)) {
-                sectionName = section;
-                break;
-            }
+        hasStartedHC = true;
+    });
+
+    let hasConfirmedHC = false;
+    // On change event for radio fields
+    $(document).on('click', `form.${lhcFormClass} .gform_page.details .gform_next_button`, function () {
+        // Prevent duplicate firing
+        if (hasConfirmedHC) {
+            return;
         }
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+            event: `${trackingEventPrefix}_Confirm`,
+        });
+        // Add hash to URL
+        window.location.hash = 'confirm';
 
-        // Improved: Identify field name by matching class with prefix or full list (scalable for new questions)
-        const knownFields = [
-            'diabetes', 'postcode', 'name', 'email',
-            'q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8', 'q9', 'q10', 'q11', 'q12'
-        ];
-        let fieldName = 'question';
-        for (let key of knownFields) {
-            if ($parentField.hasClass(key)) {
-                fieldName = key;
-                break;
-            }
-        }
-
-        // Check if field is text, number, or email type
-        const inputType = $input.attr('type') || '';
-        const isTextNumberEmail = ['text', 'number', 'email'].includes(inputType.toLowerCase());
-
-        // For text, number, email fields: check validation class instead of hashing value
-        let value;
-        if (isTextNumberEmail) {
-            // Check validation class from other validation function
-            if ($parentField.hasClass('is_valid')) {
-                value = 'valid';
-            } else if ($parentField.hasClass('is_invalid')) {
-                value = 'invalid';
-            }
-        } else {
-            // For other fields (radio, select, etc.): use actual value
-            value = ($input.val() || '').toString().trim().toLowerCase().replace(/\s+/g, '-');
-        }
-
-        // Only proceed if fieldName is meaningful or value exists
-        if (fieldName && value !== undefined) {
-            // Set new hash fragment (prevents duplicate hash if same as before)
-            let newHash = `${sectionName}:${fieldName}-${value}`;
-            if (window.location.hash !== `#${newHash}`) {
-                window.location.hash = newHash;
-            }
-
-            // Send event to GA4 only if window.dataLayer is present
-            window.dataLayer = window.dataLayer || [];
-            window.dataLayer.push({
-                event: `${fieldName}_${value}`,
-                field: fieldName,
-                value: value,
-                section: sectionName,
-            });
-        }
+        hasConfirmedHC = true;
     });
 
     // Final step form validation and submission
@@ -701,16 +910,34 @@ jQuery(function ($) {
             return false;
         }
 
-        // Get email from hidden field
-        const email = $('input#lhc_user_email').val();
+        // Get email, entry ID, and phone field ID from hidden fields
+        const email = $form.find('#input-ausdrisk-user-email').val();
+        const entryId = $form.find('#input-ausdrisk-entry-id').val();
+        const phoneFieldId = $form.find('#input-ausdrisk-phone-gfield-id').val();
+
         if (!email) {
-            $validateMess.text('Email not found. Please refresh the page and try again.').show();
+            $validateMess.text('Email not found. Please contact support.').show();
+            return false;
+        }
+        if (!entryId) {
+            $validateMess.text('Entry ID not found. Please contact support.').show();
+            return false;
+        }
+        if (!phoneFieldId) {
+            $validateMess.text('Configuration error. Please contact support.').show();
             return false;
         }
 
         // Disable submit button
-        const $submitBtn = $form.find('#btn-final-submit');
+        const $submitBtn = $form.find('#btn-ausdrisk-final-submit');
         $submitBtn.prop('disabled', true).val('Submitting...');
+
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+            event: `${trackingEventPrefix}_Submit_EOI`,
+        });
+        // Add hash to URL
+        window.location.hash = 'submit-eoi';
 
         // Submit via AJAX
         $.ajax({
@@ -719,7 +946,9 @@ jQuery(function ($) {
             data: {
                 action: 'life_update_lead_phone',
                 email: email,
-                phone: phoneValue
+                phone: phoneValue,
+                entry_id: entryId,
+                phone_field_id: phoneFieldId
             },
             success: function (response) {
                 if (response.success) {
@@ -732,6 +961,13 @@ jQuery(function ($) {
                             var windowHeight = $(window).height();
                             var scrollTo = containerOffset - (windowHeight / 2) + (containerHeight / 2);
                             $('html, body').animate({ scrollTop: Math.max(scrollTo, 0) }, 400);
+
+                            window.dataLayer = window.dataLayer || [];
+                            window.dataLayer.push({
+                                event: `${trackingEventPrefix}_Thankyou`,
+                            });
+                            // Add hash to URL
+                            window.location.hash = 'thankyou';
                         }
                     });
                     $('.form-wrapper .share-wrapper').show();
@@ -807,6 +1043,11 @@ jQuery(function ($) {
                 const $field = $(this);
                 const fieldClass = $field.attr('class') || '';
 
+                // Exclude fields with conditional logic hidden attribute
+                if ($field.attr('data-conditional-logic') === 'hidden') {
+                    return false;
+                }
+
                 // Exclude fields that don't need user interaction
                 const excludeClasses = [
                     'gfield_html',           // HTML content fields
@@ -817,9 +1058,12 @@ jQuery(function ($) {
                     'gfield_consent',        // Consent fields (if any)
                     'hidden_field',
                     'postcode',
-                    'name',
+                    'first_name',
+                    'last_name',
                     'email',
                     'confirm-contact',
+                    'waist-result-asia-ab',
+                    'waist-result-other',
                 ];
 
                 // Check if field has any exclude classes
@@ -918,8 +1162,12 @@ jQuery(function ($) {
         handleFieldChange($field) {
             if (this.isFieldValid($field)) {
                 this.revealNextField($field);
-                this.updatePageFooterState();
+            } else {
+                // Field is no longer valid - mark as incomplete
+                $field.removeClass('completed-field');
             }
+            // Always update footer state whether field is valid or not
+            this.updatePageFooterState();
         }
 
         // Check if field is valid
@@ -973,11 +1221,8 @@ jQuery(function ($) {
             if (nextIndex < this.validFields.length) {
                 const $nextField = $(this.validFields[nextIndex]);
 
-                // Remove disabled class and add active class with animation
+                // Remove disabled class and add active class
                 $nextField.removeClass('disabled-field').addClass('active-field');
-
-                // Trigger fade-in animation
-                $nextField.fadeIn(200);
             }
         }
 
@@ -990,6 +1235,9 @@ jQuery(function ($) {
                 $field.toggleClass('is_valid', valid && !$field.hasClass('gfield_error'));
                 if (valid) {
                     $field.addClass('completed-field').removeClass('disabled-field');
+                } else {
+                    // Field is not valid - remove completed status
+                    $field.removeClass('completed-field');
                 }
             });
         }
@@ -1001,10 +1249,16 @@ jQuery(function ($) {
 
             if (!pageFooter.length) return;
 
-            // Check if all fields on current page are completed
+            // Check if all fields on current page are completed (excluding conditionally hidden fields)
             let allFieldsCompleted = true;
             this.validFields.each((index, field) => {
                 const $field = $(field);
+
+                // Skip fields that are conditionally hidden
+                if ($field.attr('data-conditional-logic') === 'hidden') {
+                    return true; // continue to next field
+                }
+
                 if (!$field.hasClass('completed-field') && !this.isFieldValid($field)) {
                     allFieldsCompleted = false;
                     return false; // break the loop
@@ -1081,7 +1335,7 @@ jQuery(function ($) {
         $(window).on('resize', function () {
             let currWidth = $(window).width();
 
-            if (! $('body').hasClass('life-health-check')) {
+            if (!$('body').hasClass('life-health-check')) {
                 return;
             }
 

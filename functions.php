@@ -771,66 +771,154 @@ add_action('wp_ajax_life_update_lead_phone', 'life_ajax_update_lead_phone');
 add_action('wp_ajax_nopriv_life_update_lead_phone', 'life_ajax_update_lead_phone');
 
 function life_ajax_update_lead_phone() {
-    // Check if email and phone are provided
-    $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
-    $phone = isset($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
-    
-    if (empty($email)) {
-        wp_send_json_error([
-            'message' => 'Email is required.'
-        ]);
-        return;
+  // Check if required parameters are provided
+  $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
+  $phone = isset($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
+  $entry_id = isset($_POST['entry_id']) ? absint($_POST['entry_id']) : 0;
+  $phone_field_id = isset($_POST['phone_field_id']) ? absint($_POST['phone_field_id']) : 0;
+  
+  // Validate email
+  if (empty($email) || !is_email($email)) {
+    wp_send_json_error([
+        'message' => 'Valid email is required.'
+    ]);
+    return;
+  }
+  
+  // Validate phone
+  if (empty($phone)) {
+    wp_send_json_error([
+        'message' => 'Phone number is required.'
+    ]);
+    return;
+  }
+  
+  // Validate entry ID
+  if (empty($entry_id)) {
+    wp_send_json_error([
+        'message' => 'Entry ID is required.'
+    ]);
+    return;
+  }
+  
+  // Validate phone field ID
+  if (empty($phone_field_id)) {
+    wp_send_json_error([
+        'message' => 'Phone field ID is required.'
+    ]);
+    return;
+  }
+  
+  // Check if Gravity Forms API is available
+  if (!class_exists('GFAPI')) {
+    wp_send_json_error([
+        'message' => 'Gravity Forms is not available.'
+    ]);
+    return;
+  }
+  
+  // Get the entry to verify it exists and get the form ID
+  $entry = GFAPI::get_entry($entry_id);
+  
+  if (is_wp_error($entry)) {
+    wp_send_json_error([
+        'message' => 'Entry not found.'
+    ]);
+    return;
+  }
+  
+  // Update the phone field in the entry
+  $result = GFAPI::update_entry_field($entry_id, $phone_field_id, $phone);
+  
+  if (is_wp_error($result)) {
+    wp_send_json_error([
+        'message' => 'Failed to update phone number: ' . $result->get_error_message()
+    ]);
+    return;
+  }
+  
+  // Get the form ID from the entry
+  $form_id = $entry['form_id'];
+  
+  // Resend admin notifications
+  // Get the updated entry for notification
+  $updated_entry = GFAPI::get_entry($entry_id);
+  
+  // Get the form to access its notifications
+  $form = GFAPI::get_form($form_id);
+  
+  // Send each notification individually (bypassing conditional logic)
+  if (isset($form['notifications']) && is_array($form['notifications'])) {
+    foreach ($form['notifications'] as $notification_id => $notification) {
+      // Send the notification
+      GFCommon::send_notification($notification, $form, $updated_entry);
     }
-    
-    if (empty($phone)) {
-        wp_send_json_error([
-            'message' => 'Phone number is required.'
-        ]);
-        return;
-    }
-    
-    // Validate email format
-    if (!is_email($email)) {
-        wp_send_json_error([
-            'message' => 'Invalid email format.'
-        ]);
-        return;
-    }
-    
-    // Query Salesforce for Lead by email
+  }
+  
+  // Update Salesforce Lead phone number
+  $sf_errors = [];
+  $sf_lead_id = null;
+  
+  // Query Salesforce for Lead by email
+  if (function_exists('\SfFuncs\queryLeadByEmail')) {
     $lead = \SfFuncs\queryLeadByEmail($email);
     
-    if (!$lead || !isset($lead['Id'])) {
-        wp_send_json_error([
-            'message' => 'Lead not found with the provided email address.'
-        ]);
-        return;
+    if ($lead && isset($lead['Id'])) {
+      // Prepare data for update (Phone field in Salesforce)
+      $sf_data = [
+          'Phone' => $phone
+      ];
+      // Update Lead in Salesforce
+      $sf_errors = \SfFuncs\updateLeadById($lead['Id'], $sf_data);
+      $sf_lead_id = $lead['Id'];
     }
-    
-    // Prepare data for update (Phone field in Salesforce)
-    $sf_data = [
-        'Phone' => $phone
-    ];
-    
-    // Update Lead in Salesforce
-    $errors = \SfFuncs\updateLeadById($lead['Id'], $sf_data);
-    
-    if (empty($errors)) {
-        wp_send_json_success([
-            'message' => 'Phone number updated successfully.',
-            'leadId' => $lead['Id']
-        ]);
-    } else {
-        $errorMessage = isset($errors[0]['message']) 
-            ? $errors[0]['message'] 
-            : 'Failed to update phone number in Salesforce.';
-        
-        wp_send_json_error([
-            'message' => $errorMessage,
-            'errors' => $errors
-        ]);
-    }
+  }
+  
+  wp_send_json_success([
+    'message' => 'Phone number updated and notification sent successfully.',
+    'entry_id' => $entry_id,
+    'sf_lead_id' => $sf_lead_id,
+    'sf_errors' => $sf_errors
+  ]);
 }
+
+/**
+ * Convert "true"/"false" string values to Boolean before sending to Salesforce
+ * Only applies to checkbox, radio, text, and select field types
+ * 
+ * @param mixed  $field_value The field value to be sent to Salesforce
+ * @param array  $form        The form object
+ * @param array  $entry       The entry object
+ * @param string $field_id    The field ID
+ * @param array  $feed        The feed object
+ * 
+ * @return mixed The converted field value (Boolean if "true"/"false" string from supported fields, otherwise original value)
+ */
+function life_convert_gform_entry_booleans($field_value, $form, $entry, $field_id, $feed) {
+  // Only process if value is a string
+  if (!is_string($field_value)) {
+    return $field_value;
+  }
+  // Get the field object from the form
+  $field = GFFormsModel::get_field($form, $field_id);
+  
+  // Only convert for checkbox, radio, text, and select fields
+  if (!$field || !in_array($field->type, array('checkbox', 'radio', 'text', 'select'))) {
+    return $field_value;
+  }
+  // Convert "true" string to Boolean true
+  if (strtolower(trim($field_value)) === 'true') {
+    return true;
+  }
+  // Convert "false" string to Boolean false
+  if (strtolower(trim($field_value)) === 'false') {
+    return false;
+  }
+  // Return original value if not "true" or "false"
+  return $field_value;
+}
+add_filter('gform_salesforce_field_value', 'life_convert_gform_entry_booleans', 10, 5);
+
 
 add_action( 'wp_enqueue_scripts', function () {
   wp_dequeue_style( 'wp-block-library' );
@@ -1017,14 +1105,25 @@ function life_enqueue_main() {
   // Localize CALD languages and gravity form ID for health check page
   if (is_page_template('page-templates/life-health-check.php')) {
     $post_id = get_the_ID();
+    $events_prefix_arr = [
+      'english' => 'English',
+      'chinese_s' => 'ChineseS',
+      'chinese_t' => 'ChineseT',
+      'arabic' => 'Arabic',
+      'vietnamese' => 'Vietnamese',
+    ];
     $cald_languages = get_field('cald_languages', $post_id);
     $gravity_form_id = get_field('gravity_form_id', $post_id) ?: 2;
     $dv_redirect_url = get_field('diabetes_victoria_redirect_url', 'options') ?: 'https://www.diabetesvic.org.au/';
-    
+    $ausdrisk_language = get_field('ausdrisk_language', $post_id);
+    $tracking_event_prefix = $events_prefix_arr[$ausdrisk_language] ?? 'English';
+
     wp_localize_script('life-main-js', 'lifeHealthCheck', array(
       'gravityFormId' => $gravity_form_id,
       'caldLanguages' => $cald_languages ?: array(),
       'dvRedirectUrl' => $dv_redirect_url,
+      'ausdriskLanguage' => $ausdrisk_language,
+      'trackingEventPrefix' => $tracking_event_prefix,
     ));
   }
 }

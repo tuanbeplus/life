@@ -48,17 +48,20 @@ body {
       @media (max-width: 767px) {
         height: 290px;
       }
+      @media (max-width: 480px) {
+        height: 230px;
+      }
     }
 
     .page-tilte {
       position: absolute;
       left: 50%;
-      top: 50%;
+      bottom: 34%;
       transform: translate(-50%, 0);
       width: 100%;
       text-align: center;
       @media (max-width: 767px) {
-        top: 60%;
+        bottom: 24%;
       }
     }
 
@@ -398,6 +401,10 @@ body {
           gap: 10px;
           width: fit-content;
           transition: all 0.3s !important;
+          @media (max-width: 767px) {
+            padding: 12px 14px;
+            gap: 6px;
+          }
           &:hover {
             background-color: #f47b20;
           }
@@ -447,8 +454,36 @@ body {
           }
         }
         .gform_fields {
+          grid-row-gap: 16px;
+          grid-column-gap: 20px;
           .gfield {
             position: relative;
+            &.last_name {
+              > .gfield_description {
+                display: none;
+                @media (max-width: 767px) {
+                  display: block;
+                }
+              }
+            }
+            &.q11 {
+              .gfield_label {
+                margin-bottom: 80px;
+              }
+              .gfield_description {
+                position: absolute;
+                top: 50px;
+                margin: 0;
+                @media (max-width: 400px) {
+                  top: 60px;
+                }
+                &.validation_message {
+                  position: relative;
+                  bottom: unset;
+                  top: 6px;
+                }
+              }
+            }
             &.acceptable-non-vic-regions {
               display: none;
             }
@@ -480,10 +515,15 @@ body {
                 margin-bottom: 24px;
               }
             }
+            &.gfield--type-html {
+              font-weight: 400;
+            }
             &.hidden_field {
               display: none !important;
-              opacity: 0 !important;
-              visibility: hidden !important;
+              pointer-events: none;
+              .gfield_label {
+                margin-bottom: 10px;
+              }
             }
             &:last-child {
               padding-bottom: 0 !important;
@@ -538,7 +578,8 @@ body {
               padding-bottom: 0;
               border-bottom: none;
             }
-            &.name,
+            &.first_name,
+            &.last_name,
             &.email {
               padding-bottom: 0;
               margin-bottom: 16px;
@@ -549,16 +590,6 @@ body {
                 line-height: 1.1;
                 font-weight: 500;
                 margin-bottom: 12px;
-              }
-              .gfield_description.validation_message {
-                bottom: -26px;
-              }
-            }
-            &.email {
-              .gfield_description.validation_message {
-                @media (max-width: 450px) {
-                  bottom: -50px;
-                }
               }
             }
             &.confirm-contact {
@@ -581,6 +612,7 @@ body {
               margin-bottom: 24px;
               font-size: 24px;
               font-weight: bold;
+              color: #f47b20;
               @media (max-width: 767px) {
                 font-size: 20px;
               }
@@ -640,10 +672,16 @@ body {
             input[type="number"] {
               -moz-appearance: textfield;
             }
+            .ginput_container {
+              position: relative;
+            }
 
             &.postcode {
               .ginput_container {
                 width: fit-content;
+                .validation_message {
+                  white-space: nowrap;
+                }
               }
               input {
                 width: 120px;
@@ -680,16 +718,15 @@ body {
                 }
                 .btn-clear-select {
                   margin: 0;
-                  padding: 4px;
+                  padding: 0;
                   position: absolute;
-                  top: 50%;
-                  transform: translateY(-50%);
+                  top: 11px;
                   right: 14px;
                   display: block;
-                  width: 26px;
-                  height: 26px;
+                  width: 32px;
+                  height: 32px;
                   background-image: url("/wp-content/themes/life/assets/imgs/x-close.svg");
-                  background-size: cover;
+                  background-size: 26px;
                   background-position: center;
                   background-repeat: no-repeat;
                   background-color: var(--brandMidGreen);
@@ -787,8 +824,7 @@ body {
               &::after {
                 content: "";
                 position: absolute;
-                top: 50%;
-                transform: translateY(-50%);
+                top: 12px;
                 right: 14px;
                 display: block;
                 width: 30px;
@@ -799,17 +835,14 @@ body {
               }
             }
 
-            .gfield_description.validation_message {
-              position: absolute;
-              margin-top: 0;
+            .validation_message {
+              margin-top: 6px;
               padding: 0;
               border: none;
               background-color: transparent;
               font-size: 14px;
               font-weight: 400;
               width: fit-content;
-              top: unset;
-              bottom: 26px;
               color: #FF0000;
             }
 
@@ -846,6 +879,9 @@ body {
         @media (max-width:767px) {
           margin-top: 30px !important;
           flex-wrap: wrap;
+        }
+        &.active {
+          display: flex !important;
         }
 
         .gform_previous_button {
@@ -1099,7 +1135,7 @@ body {
       // Lists
       ul, ol, .wp-block-list {
         list-style-position: inside;
-        margin: 1.7em 0 1.7em 0;
+        margin: 20px 0;
         padding: 0 0 0 20px;
         color: #000;
         max-width: 700px;

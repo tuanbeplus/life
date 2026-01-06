@@ -1,6 +1,6 @@
 {
     "key": "group_68ef02df07b9a",
-    "title": "Life! Health Check Settings",
+    "title": "Life! Health Check - Common Settings",
     "fields": [
         {
             "key": "field_68ef02dd3805f",
@@ -95,6 +95,27 @@
             "max_rows": "",
             "return_format": [],
             "allow_in_bindings": 0
+        },
+        {
+            "key": "field_6914060d41509",
+            "label": "Diabetes Victoria programs and services redirect URL",
+            "name": "diabetes_victoria_redirect_url",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "allow_in_bindings": 0,
+            "placeholder": "",
+            "prepend": "",
+            "append": ""
         }
     ],
     "location": [
@@ -123,5 +144,5 @@
     "acfe_form": 0,
     "acfe_meta": "",
     "acfe_note": "",
-    "modified": 1762843851
+    "modified": 1762920802
 }

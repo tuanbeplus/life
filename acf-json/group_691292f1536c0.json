@@ -1,6 +1,6 @@
 {
     "key": "group_691292f1536c0",
-    "title": "Life! Health Check Options",
+    "title": "Life! Health Check - Page Options",
     "fields": [
         {
             "key": "field_691292eee6ed8",
@@ -12,7 +12,7 @@
             "required": 0,
             "conditional_logic": 0,
             "wrapper": {
-                "width": "",
+                "width": "50",
                 "class": "",
                 "id": ""
             },
@@ -24,6 +24,40 @@
             "step": "",
             "prepend": "",
             "append": ""
+        },
+        {
+            "key": "field_695c8ce308761",
+            "label": "AUSDRISK Language",
+            "name": "ausdrisk_language",
+            "aria-label": "",
+            "type": "select",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "choices": {
+                "english": "English",
+                "chinese_s": "Simplified Chinese",
+                "chinese_t": "Traditional Chinese",
+                "arabic": "Arabic",
+                "vietnamese": "Vietnamese"
+            },
+            "default_value": "english",
+            "return_format": "value",
+            "multiple": 0,
+            "allow_null": 0,
+            "allow_in_bindings": 0,
+            "ui": 0,
+            "ajax": 0,
+            "placeholder": "",
+            "create_options": 0,
+            "save_options": 0,
+            "allow_custom": 0,
+            "search_placeholder": ""
         },
         {
             "key": "field_6912940be6ed9",
@@ -360,8 +394,8 @@
                         },
                         {
                             "key": "field_69129d96e6eee",
-                            "label": "Validation Name",
-                            "name": "validation_name",
+                            "label": "Validation First Name",
+                            "name": "validation_first_name",
                             "aria-label": "",
                             "type": "text",
                             "instructions": "",
@@ -372,7 +406,28 @@
                                 "class": "",
                                 "id": ""
                             },
-                            "default_value": "Please provide your full name - example: Jo Smith",
+                            "default_value": "Please provide your first name - example: John",
+                            "maxlength": "",
+                            "allow_in_bindings": 0,
+                            "placeholder": "",
+                            "prepend": "",
+                            "append": ""
+                        },
+                        {
+                            "key": "field_694b512eaa98f",
+                            "label": "Validation Last Name",
+                            "name": "validation_last_name",
+                            "aria-label": "",
+                            "type": "text",
+                            "instructions": "",
+                            "required": 0,
+                            "conditional_logic": 0,
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "default_value": "Please provide your last name - example: Smith",
                             "maxlength": "",
                             "allow_in_bindings": 0,
                             "placeholder": "",
@@ -458,5 +513,5 @@
     "acfe_form": 0,
     "acfe_meta": "",
     "acfe_note": "",
-    "modified": 1762828566
+    "modified": 1767673521
 }

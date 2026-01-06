@@ -1,9 +1,9 @@
 {
     "key": "ui_options_page_68ef01f288021",
-    "title": "Life! Health Check",
+    "title": "Life! Health Check Settings",
     "active": true,
     "menu_order": 0,
-    "page_title": "Life! Health Check",
+    "page_title": "Life! Health Check Settings",
     "menu_slug": "life-health-check",
     "parent_slug": "none",
     "advanced_configuration": 0,
@@ -22,5 +22,5 @@
     "data_storage": "options",
     "post_id": "",
     "autoload": 0,
-    "modified": 1760494253
+    "modified": 1762920040
 }

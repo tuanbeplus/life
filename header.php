@@ -67,6 +67,148 @@ wp_reset_postdata();
     <meta name="msapplication-TileImage" content="<?= get_template_directory_uri() ?>/images/favicon/mstile-144x144.png" />
     <?= viteIncludes('app.js') ?>
     <?php wp_head() ?>
+    <script>
+      (function () {
+        "use strict";
+
+        var redirected = false;
+
+        /* ===============================
+        * HASH → URL MAP (EXACT MATCH)
+        * =============================== */
+        var map = {
+          "#health-check": "<?php echo home_url('/health-check/'); ?>",
+          "#health-check-chinese-simplified": "<?php echo home_url('/health-check/chinese-simplified/'); ?>",
+          "#health-check-chinese-traditional": "<?php echo home_url('/health-check/chinese-traditional/'); ?>",
+          "#health-check-arabic": "<?php echo home_url('/health-check/arabic/'); ?>",
+          "#health-check-vietnamese": "<?php echo home_url('/health-check/vietnamese/'); ?>"
+        };
+
+        /* ===============================
+        * SAFE REDIRECT FUNCTION
+        * =============================== */
+        function redirectTo(url) {
+          if (redirected) return;
+          redirected = true;
+
+          var qs = window.location.search || "";
+          window.location.replace(url + qs);
+        }
+
+        /* ===============================
+        * ON LOAD — HASH ONLY
+        * =============================== */
+        var hash = window.location.hash.toLowerCase();
+        if (map.hasOwnProperty(hash)) {
+          redirectTo(map[hash]);
+          return;
+        }
+        /* ===============================
+        * CLICK HANDLER — HASH LINKS (FULL URL SAFE)
+        * =============================== */
+        document.addEventListener("click", function (e) {
+          if (e.button !== 0) return;
+
+          var link = e.target.closest("a");
+          if (!link) return;
+
+          if (
+            link.target === "_blank" ||
+            link.hasAttribute("download") ||
+            link.hasAttribute("data-no-redirect")
+          ) {
+            return;
+          }
+
+          var href = link.getAttribute("href");
+          if (!href) return;
+
+          var hash = "";
+
+          /* CASE 1: href="#health-check" */
+          if (href.charAt(0) === "#") {
+            hash = href.toLowerCase();
+          }
+
+          /* CASE 2: full URL with hash */
+          else {
+            try {
+              var url = new URL(href, window.location.origin);
+
+              /* only same-origin URLs */
+              if (url.origin !== window.location.origin) return;
+
+              hash = url.hash.toLowerCase();
+            } catch (err) {
+              return;
+            }
+          }
+
+          if (!hash || !map.hasOwnProperty(hash)) return;
+
+          e.preventDefault();
+          e.stopImmediatePropagation();
+
+          redirectTo(map[hash]);
+        }, true);
+
+        /* ===============================
+        * BUTTON HANDLER — LANGUAGE AWARE
+        * =============================== */
+        document.addEventListener("click", function (e) {
+          if (e.button !== 0) return;
+
+          var btn = e.target.closest(".health-check-trigger .-button");
+          if (!btn) return;
+
+          var trigger = btn.closest(".health-check-trigger");
+          if (!trigger) return;
+
+          e.preventDefault();
+          e.stopImmediatePropagation();
+
+          /* ENGLISH */
+          if (trigger.classList.contains("-lang-en")) {
+            redirectTo("<?php echo home_url('/health-check/'); ?>");
+            return;
+          }
+
+          /* CHINESE (ORDER BASED) */
+          if (trigger.classList.contains("-lang-zh")) {
+            var langBlock = btn.closest(".-lang");
+            if (!langBlock) return;
+
+            var langBlocks = trigger.querySelectorAll(".-lang");
+
+            if (langBlocks[0] === langBlock) {
+              redirectTo("<?php echo home_url('/health-check/chinese-simplified/'); ?>");
+              return;
+            }
+
+            if (langBlocks[1] === langBlock) {
+              redirectTo("<?php echo home_url('/health-check/chinese-traditional/'); ?>");
+              return;
+            }
+
+            return;
+          }
+
+          /* ARABIC */
+          if (trigger.classList.contains("-lang-ar")) {
+            redirectTo("<?php echo home_url('/health-check/arabic/'); ?>");
+            return;
+          }
+
+          /* VIETNAMESE */
+          if (trigger.classList.contains("-lang-vi")) {
+            redirectTo("<?php echo home_url('/health-check/vietnamese/'); ?>");
+            return;
+          }
+
+        }, true);
+
+      })();
+    </script>
     <style>
       [v-cloak] {
         opacity: 0 !important;

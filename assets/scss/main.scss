@@ -27,14 +27,31 @@ body {
     }
 
     .page {
-      background-image: url("/wp-content/uploads/2025/10/form-bg.jpg");
-      background-position: center 200px;
+      background-image: url("/wp-content/uploads/2026/01/health-check-bg.jpg");
+      background-position: center 0;
       background-size: cover;
       background-repeat: no-repeat;
+      @media (max-width: 1024px) {
+        background-position: center 200px;
+      }
     }
 
     .health-check-trigger {
       display: none;
+    }
+
+    .block-breadcrumbs {
+      background-color: transparent;
+      .edge-curve {
+        svg path {
+          fill: #bbd876 !important;
+        }
+      }
+      #breadcrumbs {
+        ul li em {
+          margin-right: 4px;
+        }
+      }
     }
   }
 
@@ -45,6 +62,7 @@ body {
     img {
       width: 100%;
       object-fit: cover;
+      display: block;
       @media (max-width: 767px) {
         height: 290px;
       }
@@ -450,6 +468,7 @@ body {
           &.intro {
             .gform_page_footer {
               display: none;
+              justify-content: center;
             }
           }
         }
@@ -481,6 +500,15 @@ body {
                   position: relative;
                   bottom: unset;
                   top: 6px;
+                }
+              }
+            }
+            &.q12 {
+              .gfield_label {
+                &::after {
+                  content: " *";
+                  color: #c02b0a;
+                  font-weight: normal;
                 }
               }
             }

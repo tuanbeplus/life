@@ -32,14 +32,9 @@ function get_cald_text($key, $default = '') {
 }
 ?>
 <div class="page">
-    <section class="ss-hero">
-        <?php echo the_post_thumbnail( 'full' ); ?>
-        <div class="page-tilte center-frame">
-            <h1><?php echo apply_filters('the_brand', get_the_title()) ?></h1>
-        </div>
-    </section>
+    <?php echoTemplate('hero-banner/hero-banner-sml'); ?>
+    <?php echoTemplate('widget/breadcrumbs'); ?>
     <section class="ss-health-check center-frame">
-        <?php echo life_breadcrumbs(); ?>
         <div class="container">
             <div class="sidebar">
                 <!-- Get Started Section -->

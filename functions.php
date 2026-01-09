@@ -771,12 +771,22 @@ add_action('wp_ajax_life_update_lead_phone', 'life_ajax_update_lead_phone');
 add_action('wp_ajax_nopriv_life_update_lead_phone', 'life_ajax_update_lead_phone');
 
 function life_ajax_update_lead_phone() {
+  // Verify nonce for security
+  if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'life_update_lead_phone_nonce')) {
+    wp_send_json_error([
+      'message' => 'Security check failed.'
+    ]);
+    return;
+  }
+  
   // Check if required parameters are provided
   $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
   $phone = isset($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
   $entry_id = isset($_POST['entry_id']) ? absint($_POST['entry_id']) : 0;
   $phone_field_id = isset($_POST['phone_field_id']) ? absint($_POST['phone_field_id']) : 0;
-  
+  $result_field_id = isset($_POST['result_field_id']) ? absint($_POST['result_field_id']) : 0;
+  $ausdrisk_result = isset($_POST['ausdrisk_result']) ? sanitize_text_field($_POST['ausdrisk_result']) : 'EOI received';
+
   // Validate email
   if (empty($email) || !is_email($email)) {
     wp_send_json_error([
@@ -809,6 +819,14 @@ function life_ajax_update_lead_phone() {
     return;
   }
   
+  // Validate result field ID
+  if (empty($result_field_id)) {
+    wp_send_json_error([
+        'message' => 'Result field ID is required.'
+    ]);
+    return;
+  }
+  
   // Check if Gravity Forms API is available
   if (!class_exists('GFAPI')) {
     wp_send_json_error([
@@ -817,28 +835,38 @@ function life_ajax_update_lead_phone() {
     return;
   }
   
-  // Get the entry to verify it exists and get the form ID
-  $entry = GFAPI::get_entry($entry_id);
+  // Get the phone entry to verify it exists and get the form ID
+  $gform_entry = GFAPI::get_entry($entry_id);
   
-  if (is_wp_error($entry)) {
+  if (is_wp_error($gform_entry)) {
     wp_send_json_error([
-        'message' => 'Entry not found.'
+        'message' => 'Phone Entry not found.'
     ]);
     return;
   }
   
-  // Update the phone field in the entry
-  $result = GFAPI::update_entry_field($entry_id, $phone_field_id, $phone);
-  
-  if (is_wp_error($result)) {
+  // Update the phone field in the phone entry
+  $phone_updated = GFAPI::update_entry_field($entry_id, $phone_field_id, $phone);
+
+  // Update the result field in the result entry
+  $result_updated = GFAPI::update_entry_field($entry_id, $result_field_id, $ausdrisk_result);
+
+  if (is_wp_error($phone_updated)) {
     wp_send_json_error([
-        'message' => 'Failed to update phone number: ' . $result->get_error_message()
+        'message' => 'Failed to update phone number: ' . $phone_updated->get_error_message()
+    ]);
+    return;
+  }
+
+  if (is_wp_error($result_updated)) {
+    wp_send_json_error([
+        'message' => 'Failed to update AUSDRISK result: ' . $result_updated->get_error_message()
     ]);
     return;
   }
   
-  // Get the form ID from the entry
-  $form_id = $entry['form_id'];
+  // Get the form ID from the phone entry
+  $form_id = $gform_entry['form_id'];
   
   // Resend admin notifications
   // Get the updated entry for notification
@@ -866,7 +894,10 @@ function life_ajax_update_lead_phone() {
     if ($lead && isset($lead['Id'])) {
       // Prepare data for update (Phone field in Salesforce)
       $sf_data = [
-          'Phone' => $phone
+        'I_can_provide_evidence_for_CVD_GDM_FH__c' => true,
+        'Phone' => $phone,
+        'MobilePhone' => $phone,
+        'Status' => $ausdrisk_result,
       ];
       // Update Lead in Salesforce
       $sf_errors = \SfFuncs\updateLeadById($lead['Id'], $sf_data);
@@ -875,10 +906,12 @@ function life_ajax_update_lead_phone() {
   }
   
   wp_send_json_success([
-    'message' => 'Phone number updated and notification sent successfully.',
+    'message' => 'Lead updated and notification sent successfully.',
     'entry_id' => $entry_id,
     'sf_lead_id' => $sf_lead_id,
-    'sf_errors' => $sf_errors
+    'sf_errors' => $sf_errors,
+    'ausdrisk_result' => $ausdrisk_result,
+    'phone_number' => $phone,
   ]);
 }
 
@@ -1097,9 +1130,10 @@ function life_enqueue_main() {
   wp_enqueue_style('life-main-css', $theme_dir . '/assets/css/main.css', array(), $theme_ver, 'all');
   wp_enqueue_script('life-main-js', $theme_dir . '/assets/js/main.js', array('jquery'), $theme_ver, true);
   
-  // Localize script with AJAX URL
+  // Localize script with AJAX URL and nonce
   wp_localize_script('life-main-js', 'lifeAjax', array(
-    'ajaxurl' => admin_url('admin-ajax.php')
+    'ajaxurl' => admin_url('admin-ajax.php'),
+    'updateLeadPhoneNonce' => wp_create_nonce('life_update_lead_phone_nonce')
   ));
   
   // Localize CALD languages and gravity form ID for health check page
@@ -1129,83 +1163,3 @@ function life_enqueue_main() {
 }
 add_action('wp_enqueue_scripts', 'life_enqueue_main');
 
-
-function life_breadcrumbs() {
-  $postType = get_post(get_the_ID())->post_type ?? '';
-  if (is_search()) {
-    $ancestors = [
-      (object)[
-        'id' => null,
-        'title' => 'Home',
-        'url' => '/',
-      ],
-      (object)[
-        'id' => null,
-        'title' => 'Search Results',
-        'url' => '/?s='.esc_html($_GET['s']),
-      ],
-    ];
-  } else {
-    $post = get_post();
-    if ($postType == 'post') {
-      $ancestors = [
-        (object)['id' => null, 'title' => 'Home', 'url' => '/'],
-        (object)['id' => null, 'title' => 'Health hub', 'url' => '/health-hub/'],
-        (object)['id' => null, 'title' => get_the_title($post), 'url' => null],
-      ];
-    } else {
-      if (isset($args['title']) && $args['title']) {
-        $ancestors = [
-          (object)[
-            'id' => 0,
-            'title' => $args['title'],
-            'url' => $_SERVER['REQUEST_URI'],
-          ],
-        ];
-      } else {
-        $ancestors = [
-          (object)[
-            'id' => $post->id,
-            'title' => get_the_title($post),
-            'url' => get_the_permalink($post),
-          ],
-        ];
-      }
-      while ( $post->post_parent ) {
-        $post = get_post($post->post_parent);
-        $ancestors[] = (object)[
-          'id' => $post->id,
-          'title' => get_the_title($post),
-          'url' => get_the_permalink($post),
-        ];
-      }
-      wp_reset_postdata();
-      $ancestors[] = (object)[
-        'id' => null,
-        'title' => 'Home',
-        'url' => '/',
-      ];
-      $ancestors = array_reverse($ancestors);
-    }
-  }
-?>
-  <div id="breadcrumbs">
-    <ul>
-      <?php foreach ($ancestors as $idx => $ancestor): ?>
-        <?php
-          // Wrap 'Life!' in <em> if present in the title.
-          $title = $ancestor->title;
-          if (strpos($title, 'Life!') !== false) {
-            $title = str_replace('Life!', '<em style="margin-right:5px;">Life!</em>', $title);
-          }
-        ?>
-        <?php if ($idx == (count($ancestors) - 1)): ?>
-          <li><?php echo $title; ?></li>
-        <?php else: ?>
-          <li><a href="<?= $ancestor->url ?>"><?php echo $title; ?></a></li>
-        <?php endif ?>
-      <?php endforeach ?>
-    </ul>
-  </div>
-<?php
-}

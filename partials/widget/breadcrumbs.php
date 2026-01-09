@@ -40,7 +40,11 @@ if (is_search()) {
         ],
       ];
     }
-    while ( $post->post_parent ) {
+    // Don't add parent pages for life-health-check template
+    $page_template = get_page_template_slug(get_the_ID());
+    $skip_parents = (strpos($page_template, 'life-health-check') !== false);
+        
+    while ( $post->post_parent && !$skip_parents) {
       $post = get_post($post->post_parent);
       $ancestors[] = (object)[
         'id' => $post->id,

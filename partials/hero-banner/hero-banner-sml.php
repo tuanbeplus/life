@@ -1,5 +1,11 @@
 <?php
 $feature_image = get_the_post_thumbnail_url(null, 'level2-hero');
+$feature_image_id = get_post_thumbnail_id();
+$feature_image_alt = $feature_image_id ? get_post_meta($feature_image_id, '_wp_attachment_image_alt', true) : '';
+// Fallback to page title if no alt text is set
+if (empty($feature_image_alt)) {
+  $feature_image_alt = get_the_title();
+}
 $sectionClass = '';
 if ($feature_image) {
   $sectionClass .= ' -has-image';
@@ -15,7 +21,7 @@ if (is_singular( 'post' )) {
     <div class="-bg tinted tint-black tint-bottom">
       <img
         src="<?= $feature_image ?>"
-        alt=""
+        alt="<?= esc_attr($feature_image_alt) ?>"
       >
     </div>
   <?php endif ?>

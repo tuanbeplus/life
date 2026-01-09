@@ -47,13 +47,47 @@ jQuery(function ($) {
         return div.innerHTML;
     }
 
+    // Prevent Enter key from submitting form on intro/details pages
+    // Only allow submit on the final questions page
+    $(document).on('keypress keydown', `form.${lhcFormClass} input, form.${lhcFormClass} select, form.${lhcFormClass} textarea`, function (e) {
+        // Check if Enter key was pressed (key code 13)
+        if (e.which === 13 || e.keyCode === 13) {
+            const $currentPage = $(this).closest('.gform_page');
+
+            // If on intro or details page, prevent submit and click next button instead
+            if ($currentPage.hasClass('intro') || $currentPage.hasClass('details')) {
+                e.preventDefault();
+                const $nextButton = $currentPage.find('.gform_next_button');
+                if ($nextButton.length && !$nextButton.prop('disabled')) {
+                    $nextButton.trigger('click');
+                }
+                return false;
+            }
+
+            // On questions page, allow default behavior only if on submit button or last field
+            // Otherwise prevent to avoid accidental submission
+            if ($currentPage.hasClass('questions')) {
+                const $target = $(e.target);
+                // Only allow if it's the submit button itself
+                if (!$target.is('input[type="submit"]')) {
+                    e.preventDefault();
+                    return false;
+                }
+            }
+        }
+    });
+
     // Centralized validation function for details page (name + email + confirm-contact checkbox)
-    function validateDetailsPageFields(currentPage) {
-        const firstNameField = currentPage.find('.gfield.first_name');
-        const lastNameField = currentPage.find('.gfield.last_name');
-        const emailField = currentPage.find('.gfield.email');
-        const confirmField = currentPage.find('.gfield.confirm-contact');
-        const nextButton = currentPage.find('.gform_next_button');
+    function validateDetailsPageFields() {
+        const detailsPage = $(`form.${lhcFormClass} .gform_page.details`);
+        // Early return if not on visible details page
+        if (!detailsPage.length) return;
+
+        const firstNameField = detailsPage.find('.gfield.first_name');
+        const lastNameField = detailsPage.find('.gfield.last_name');
+        const emailField = detailsPage.find('.gfield.email');
+        const confirmField = detailsPage.find('.gfield.confirm-contact');
+        const nextButton = detailsPage.find('.gform_next_button');
 
         // Check if all three fields exist on this page
         if (!firstNameField.length || !lastNameField.length || !emailField.length || !confirmField.length || !nextButton.length) {
@@ -390,6 +424,14 @@ jQuery(function ($) {
         });
     }
 
+    function trackEvent(name, params = {}) {
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+            event: name,
+            ...params
+        });
+    }
+
     // Initial call when document is ready
     if ($('body').hasClass('life-health-check')) {
         updateRadioButtonLabels();
@@ -398,9 +440,10 @@ jQuery(function ($) {
 
         let hasHCViewed = false;
         if (!hasHCViewed) {
-            window.dataLayer = window.dataLayer || [];
-            window.dataLayer.push({
-                event: `${trackingEventPrefix}_HC`,
+            trackEvent(`${trackingEventPrefix}_HC`, {
+                form_id: lhcFormId,
+                language: trackingEventPrefix,
+                step: 'intro'
             });
             hasHCViewed = true;
         }
@@ -445,21 +488,26 @@ jQuery(function ($) {
 
             const ausdriskResult = $('input#ausdrisk-result').val().trim();
 
-            window.dataLayer = window.dataLayer || [];
-            window.dataLayer.push({
-                event: `${trackingEventPrefix}_Results`,
+            trackEvent(`${trackingEventPrefix}_Results`, {
+                form_id: lhcFormId,
+                language: trackingEventPrefix,
+                step: 'results'
             });
 
             if (ausdriskResult === 'eligible') {
-                window.dataLayer.push({
-                    event: `${trackingEventPrefix}_Result_Eligible`,
+                trackEvent(`${trackingEventPrefix}_Result_Eligible`, {
+                    form_id: lhcFormId,
+                    language: trackingEventPrefix,
+                    step: 'results'
                 });
                 // Add hash to URL
                 window.location.hash = 'result-eligible';
             }
             else {
-                window.dataLayer.push({
-                    event: `${trackingEventPrefix}_Result_Ineligible`,
+                trackEvent(`${trackingEventPrefix}_Result_Ineligible`, {
+                    form_id: lhcFormId,
+                    language: trackingEventPrefix,
+                    step: 'results'
                 });
                 // Add hash to URL
                 window.location.hash = 'result-ineligible';
@@ -530,6 +578,10 @@ jQuery(function ($) {
                     }
                 }
             }, 500);
+
+            setTimeout(function () {
+                validateDetailsPageFields();
+            }, 300);
         }
     });
 
@@ -565,14 +617,22 @@ jQuery(function ($) {
         }
     });
 
-    $(document).on('click', `form.${lhcFormClass}  input[type=submit]`, function () {
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({
-            event: `${trackingEventPrefix}_Check_Score`,
+    $(document).on('click', `form.${lhcFormClass} .gform_page.questions input[type=submit]`, function () {
+        trackEvent(`${trackingEventPrefix}_Check_Score`, {
+            form_id: lhcFormId,
+            language: trackingEventPrefix,
+            step: 'questions'
         });
         // Add hash to URL
         window.location.hash = 'check-score';
     });
+
+    $(document).on('click change input focus blur',
+        `form.${lhcFormClass} .gform_page.details .gfield select, 
+        form.${lhcFormClass} .gform_page.details .gfield input`,
+        function () {
+            validateDetailsPageFields();
+        });
 
     let postcodeTimer = null;
 
@@ -651,7 +711,6 @@ jQuery(function ($) {
         let value = $.trim($input.val());
 
         setTimeout(function () {
-
             // Regex: single name with valid characters, length 2–50
             const nameRegex = /^[A-Za-zÀ-ỹ''\-\s]{2,50}$/;
 
@@ -675,7 +734,6 @@ jQuery(function ($) {
                             'Please provide your last name - example: Smith'
                         );
                     }
-
                     parentField.find('.ginput_container').append(
                         '<div class="gfield_description validation_message gfield_validation_message">' +
                         escapeHtml(validationText) +
@@ -690,9 +748,6 @@ jQuery(function ($) {
                     .find('.validation_message')
                     .remove();
             }
-
-            // Use centralized validation for details page
-            validateDetailsPageFields(currentPage);
 
         }, 300);
     });
@@ -722,9 +777,6 @@ jQuery(function ($) {
             } else {
                 parentField.removeClass('gfield_error is_invalid').addClass('is_valid').find('.validation_message').remove();
             }
-
-            // Use centralized validation for details page
-            validateDetailsPageFields(currentPage);
 
         }, 300);
 
@@ -764,7 +816,7 @@ jQuery(function ($) {
                 setTimeout(function () {
                     $('html, body').animate({
                         scrollTop: targetScroll
-                    }, 400, 'swing');
+                    }, 300, 'swing');
                     $('header.top-nav').addClass('hidden');
                 }, 300);
             }
@@ -814,10 +866,6 @@ jQuery(function ($) {
                 $noneCheckbox.prop('checked', false);
             }
         }
-        if (parentField.hasClass('confirm-contact')) {
-            // Use centralized validation for details page
-            validateDetailsPageFields(currentPage);
-        }
     });
 
     // On change event for radio fields
@@ -841,7 +889,7 @@ jQuery(function ($) {
                     setTimeout(function () {
                         $('html, body').animate({
                             scrollTop: targetScroll
-                        }, 400, 'swing');
+                        }, 300, 'swing');
                         $('header.top-nav').addClass('hidden');
                     }, 300);
                 }
@@ -856,9 +904,10 @@ jQuery(function ($) {
         if (hasStartedHC) {
             return;
         }
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({
-            event: `${trackingEventPrefix}_StartHC`,
+        trackEvent(`${trackingEventPrefix}_StartHC`, {
+            form_id: lhcFormId,
+            language: trackingEventPrefix,
+            step: 'intro'
         });
         // Add hash to URL
         window.location.hash = 'start-health-check';
@@ -873,9 +922,10 @@ jQuery(function ($) {
         if (hasConfirmedHC) {
             return;
         }
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({
-            event: `${trackingEventPrefix}_Confirm`,
+        trackEvent(`${trackingEventPrefix}_Confirm`, {
+            form_id: lhcFormId,
+            language: trackingEventPrefix,
+            step: 'details'
         });
         // Add hash to URL
         window.location.hash = 'confirm';
@@ -884,7 +934,7 @@ jQuery(function ($) {
     });
 
     // Final step form validation and submission
-    $(document).on('submit', '.final-step-form', function (e) {
+    $(document).on('submit', '.gform_confirmation_wrapper form.final-step-form', function (e) {
         e.preventDefault();
         if (!$(this).closest('.life-health-check').length) {
             return;
@@ -914,6 +964,8 @@ jQuery(function ($) {
         const email = $form.find('#input-ausdrisk-user-email').val();
         const entryId = $form.find('#input-ausdrisk-entry-id').val();
         const phoneFieldId = $form.find('#input-ausdrisk-phone-gfield-id').val();
+        const resultFieldId = $form.find('#input-ausdrisk-result-gfield-id').val();
+        const ausdriskResult = $form.find('#input-ausdrisk-result').val();
 
         if (!email) {
             $validateMess.text('Email not found. Please contact support.').show();
@@ -927,14 +979,19 @@ jQuery(function ($) {
             $validateMess.text('Configuration error. Please contact support.').show();
             return false;
         }
+        if (!resultFieldId) {
+            $validateMess.text('Configuration error. Please contact support.').show();
+            return false;
+        }
 
         // Disable submit button
         const $submitBtn = $form.find('#btn-ausdrisk-final-submit');
         $submitBtn.prop('disabled', true).val('Submitting...');
 
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({
-            event: `${trackingEventPrefix}_Submit_EOI`,
+        trackEvent(`${trackingEventPrefix}_Submit_EOI`, {
+            form_id: lhcFormId,
+            language: trackingEventPrefix,
+            step: 'results'
         });
         // Add hash to URL
         window.location.hash = 'submit-eoi';
@@ -945,10 +1002,13 @@ jQuery(function ($) {
             type: 'POST',
             data: {
                 action: 'life_update_lead_phone',
+                nonce: (typeof lifeAjax !== 'undefined' && lifeAjax.updateLeadPhoneNonce) ? lifeAjax.updateLeadPhoneNonce : '',
                 email: email,
                 phone: phoneValue,
                 entry_id: entryId,
-                phone_field_id: phoneFieldId
+                phone_field_id: phoneFieldId,
+                result_field_id: resultFieldId,
+                ausdrisk_result: ausdriskResult
             },
             success: function (response) {
                 if (response.success) {
@@ -960,11 +1020,12 @@ jQuery(function ($) {
                             var containerHeight = $thankYouMess.outerHeight();
                             var windowHeight = $(window).height();
                             var scrollTo = containerOffset - (windowHeight / 2) + (containerHeight / 2);
-                            $('html, body').animate({ scrollTop: Math.max(scrollTo, 0) }, 400);
+                            $('html, body').animate({ scrollTop: Math.max(scrollTo, 0) }, 300);
 
-                            window.dataLayer = window.dataLayer || [];
-                            window.dataLayer.push({
-                                event: `${trackingEventPrefix}_Thankyou`,
+                            trackEvent(`${trackingEventPrefix}_Thankyou`, {
+                                form_id: lhcFormId,
+                                language: trackingEventPrefix,
+                                step: 'results'
                             });
                             // Add hash to URL
                             window.location.hash = 'thankyou';
@@ -1114,6 +1175,9 @@ jQuery(function ($) {
             // Restore validity/completion states for visible fields (useful after page navigation)
             this.restoreFieldStates();
 
+            // Sync q12-divider visibility with q12 field
+            this.syncQ12DividerVisibility();
+
             // Disable page footer buttons initially
             this.updatePageFooterState();
 
@@ -1165,6 +1229,10 @@ jQuery(function ($) {
             } else {
                 // Field is no longer valid - mark as incomplete
                 $field.removeClass('completed-field');
+            }
+            // Sync q12-divider visibility when ausdrisk-score changes
+            if ($field.hasClass('ausdrisk-score')) {
+                this.syncQ12DividerVisibility();
             }
             // Always update footer state whether field is valid or not
             this.updatePageFooterState();
@@ -1240,6 +1308,27 @@ jQuery(function ($) {
                     $field.removeClass('completed-field');
                 }
             });
+            // Sync q12-divider visibility after restoring field states
+            this.syncQ12DividerVisibility();
+        }
+
+        // Sync q12-divider section visibility based on ausdrisk-score value
+        syncQ12DividerVisibility() {
+            const $ausdriskScoreField = this.form.find('.gfield.ausdrisk-score');
+            const $q12Divider = this.form.find('.gsection.q12-divider');
+
+            if (!$ausdriskScoreField.length || !$q12Divider.length) return;
+
+            // Get the ausdrisk-score input value
+            const $scoreInput = $ausdriskScoreField.find('input[type="number"], input[type="text"]');
+            const scoreValue = parseFloat($scoreInput.val()) || 0;
+
+            // Show divider if score < 12, hide otherwise
+            if (scoreValue < 12) {
+                $q12Divider.show();
+            } else {
+                $q12Divider.hide();
+            }
         }
 
         // Update page footer button states based on field completion

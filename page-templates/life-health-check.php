@@ -90,7 +90,6 @@ function get_cald_text($key, $default = '') {
             </div>
             <div class="form-wrapper">
                 <div class="non_vic_postcodes-block" style="display:none;">
-                    <input id="lhc_user_email" type="hidden" value="">
                     <input id="non_vic_postcodes_json" type="hidden" value="<?php echo esc_attr( $non_vic_postcodes ); ?>">
                 </div>
                 <?php echo do_shortcode( '[gravityform id="' . esc_attr($gravity_form_id) . '" title="false" description="false" ajax="true"]' ); ?>

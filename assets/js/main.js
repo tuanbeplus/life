@@ -14,7 +14,7 @@ jQuery(function ($) {
 
     const dvRedirectUrl = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.dvRedirectUrl)
         ? lifeHealthCheck.dvRedirectUrl
-        : "https://www.diabetesvic.org.au/";
+        : "/living-with-diabetes/";
 
     const trackingEventPrefix = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.trackingEventPrefix)
         ? lifeHealthCheck.trackingEventPrefix
@@ -89,6 +89,8 @@ jQuery(function ($) {
         const confirmField = detailsPage.find('.gfield.confirm-contact');
         const nextButton = detailsPage.find('.gform_next_button');
 
+        nextButton.prop('disabled', true);
+
         // Check if all three fields exist on this page
         if (!firstNameField.length || !lastNameField.length || !emailField.length || !confirmField.length || !nextButton.length) {
             return; // Not the details page, skip
@@ -102,7 +104,9 @@ jQuery(function ($) {
 
         // Enable next button only if all three conditions are met
         const allValid = firstNameValid && lastNameValid && emailValid && confirmChecked;
-        nextButton.prop('disabled', !allValid);
+        if (allValid) {
+            nextButton.prop('disabled', false);
+        }
     }
 
     // Function to fill waist-result field based on visible waist-table and q11 select value
@@ -111,38 +115,33 @@ jQuery(function ($) {
         const $waistResultAsiaField = $(`form.${lhcFormClass} .gfield.waist-result-asia-ab input[type="text"]`);
         const $waistResultOtherField = $(`form.${lhcFormClass} .gfield.waist-result-other input[type="text"]`);
 
-        const $waistMapAsiaAb = {
-            'Less than 90cm': 'Less than 90cm',
-            'Less than 80cm': 'Less than 80cm',
-            '90cm - 100cm': '90 - 100cm',
-            '80cm - 90cm': '80-90cm',
-            'More than 100cm': 'More than 100cm',
-            'More than 90cm': 'More than 90cm',
-        };
-        const $waistMapOther = {
-            'Less than 102cm': 'Less than 102 cm',
-            'Less than 88cm': 'Less than 88 cm',
-            '102cm - 110cm': '102-110cm',
-            '88cm - 100cm': '88-100cm',
-            'More than 110cm': 'More than 110cm',
-            'More than 100cm': 'More than 100cm',
-        };
-
         // Check if q11 and at least one waist result field exist
         if (!$q11Select.length || (!$waistResultAsiaField.length && !$waistResultOtherField.length)) {
             console.log('⚠️ Q11 select or waist-result fields not found');
             return;
         }
 
-        // Get q3 and q4 values to determine which field to fill
+        // Get q1, q3 and q4 values to determine which field to fill
+        const $q1 = $(`form.${lhcFormClass} .gfield.q1 input[type=radio]:checked`);
         const $q3 = $(`form.${lhcFormClass} .gfield.q3 input[type=radio]:checked`);
         const $q4Select = $(`form.${lhcFormClass} .gfield.q4 select`);
 
+        const gender = $q1.val() ? $q1.val().toString().trim().toLowerCase() : '';
         const q3Value = $q3.val() ? $q3.val().toString().trim().toLowerCase() : '';
         const q4Value = $q4Select.val() ? $q4Select.val().toString().trim().toLowerCase() : '';
 
-        // Determine which field to fill: asia-ab if q3='yes' OR q4='Asia', otherwise other
-        const isAsiaAb = q3Value === 'yes' || q4Value === 'asia';
+        // Determine category
+        let category = '';
+        if (q3Value === 'yes') {
+            category = 'atsi';
+        } else if (q4Value.startsWith('asia')) {
+            category = 'asia';
+        } else {
+            category = 'other';
+        }
+
+        // Determine which field to fill: asia-ab if q3='yes' OR q4='Asia (including the Indian sub-continent)', otherwise other
+        const isAsiaAb = q3Value === 'yes' || q4Value.startsWith('asia');
         const $targetField = isAsiaAb ? $waistResultAsiaField : $waistResultOtherField;
         const $otherField = isAsiaAb ? $waistResultOtherField : $waistResultAsiaField;
 
@@ -162,103 +161,201 @@ jQuery(function ($) {
             console.log('⚠️ Invalid range format:', selectedRange);
             return;
         }
-        const rangeNumber = parseInt(columnMatch[1]);
+        const rangeIndex = parseInt(columnMatch[1]) - 1; // Convert to 0-based index
 
-        // Find visible waist-table
-        const $visibleTable = $('table.waist-table:visible').first();
-
-        if (!$visibleTable.length) {
-            console.log('⚠️ No visible waist-table found');
-            if ($waistResultAsiaField.length) $waistResultAsiaField.val('');
-            if ($waistResultOtherField.length) $waistResultOtherField.val('');
-            return;
+        // Get Salesforce value from waistTableData
+        let sfValue = '';
+        if (gender && waistTableData[gender] && waistTableData[gender][category]) {
+            const rangeData = waistTableData[gender][category].ranges[rangeIndex];
+            if (rangeData) {
+                sfValue = rangeData.sfValue;
+            }
         }
-
-        // Detect table type: desktop (.-desktop) or mobile (.-mobile)
-        const isDesktop = $visibleTable.hasClass('-desktop');
-        const isMobile = $visibleTable.hasClass('-mobile');
-
-        let waistText = '';
-
-        if (isDesktop) {
-            // DESKTOP TABLE STRUCTURE:
-            // <thead><tr><th>Range</th><th>1</th><th>2</th><th>3</th></tr></thead>
-            // <tbody><tr><td>Waist (cm)</td><td>Less than 90cm</td><td>90 — 100cm</td><td>More than 100cm</td></tr></tbody>
-
-            const $waistRow = $visibleTable.find('tbody tr').filter(function () {
-                return $(this).find('td').first().text().trim().toLowerCase().includes('waist');
-            });
-
-            if (!$waistRow.length) {
-                console.log('⚠️ Waist row not found in desktop table');
-                return;
-            }
-
-            // Get the td at column index (rangeNumber 1 = index 1, etc.)
-            const $targetCell = $waistRow.find('td').eq(rangeNumber);
-
-            if (!$targetCell.length) {
-                console.log('⚠️ Column not found in desktop table');
-                return;
-            }
-
-            waistText = $targetCell.text().trim();
-
-        } else if (isMobile) {
-            // MOBILE TABLE STRUCTURE:
-            // <tbody>
-            //   <tr><th>Waist (cm)</th><th>Range</th></tr>
-            //   <tr><td>Less than 90cm</td><td>1</td></tr>
-            //   <tr><td>90 — 100cm</td><td>2</td></tr>
-            //   <tr><td>More than 100cm</td><td>3</td></tr>
-            // </tbody>
-
-            // Find the row where the second column (Range) matches rangeNumber
-            const $targetRow = $visibleTable.find('tbody tr').filter(function () {
-                const $cells = $(this).find('td');
-                if ($cells.length >= 2) {
-                    const rangeValue = $cells.eq(1).text().trim();
-                    return rangeValue === rangeNumber.toString();
-                }
-                return false;
-            });
-
-            if (!$targetRow.length) {
-                console.log('⚠️ Range row not found in mobile table');
-                return;
-            }
-
-            // Get the first column (waist value)
-            const $waistCell = $targetRow.find('td').first();
-            waistText = $waistCell.text().trim();
-
-        } else {
-            console.log('⚠️ Table type not recognized (no -desktop or -mobile class)');
-            return;
-        }
-
-        // Map waistText using the appropriate mapping object
-        const waistMap = isAsiaAb ? $waistMapAsiaAb : $waistMapOther;
-        const mappedValue = waistMap[waistText] || waistText; // Use mapped value if found, otherwise use original text
 
         // Fill the appropriate waist-result field and clear the other
-        if ($targetField.length) {
-            $targetField.val(mappedValue);
+        if ($targetField.length && sfValue) {
+            $targetField.val(sfValue);
         }
         if ($otherField.length) {
             $otherField.val('');
         }
 
         // console.log('✅ Waist result filled:', {
-        //     tableType: isDesktop ? 'desktop' : 'mobile',
+        //     gender: gender,
+        //     category: category,
         //     selectedRange: selectedRange,
-        //     rangeNumber: rangeNumber,
-        //     waistText: waistText,
-        //     isAsiaAb: isAsiaAb,
-        //     q3Value: q3Value,
-        //     q4Value: q4Value
+        //     rangeIndex: rangeIndex,
+        //     sfValue: sfValue,
+        //     isAsiaAb: isAsiaAb
         // });
     }
+
+    // Comprehensive waist table data structure
+    // Format: gender -> category -> ranges (each range has display label and Salesforce value)
+    const waistTableData = {
+        male: {
+            atsi: {  // Aboriginal or Torres Strait Islander = Yes
+                ranges: [
+                    { label: 'Less than 90cm', sfValue: 'Less than 90cm' },
+                    { label: '90cm - 100cm', sfValue: '90 - 100cm' },
+                    { label: 'More than 100cm', sfValue: 'More than 100cm' }
+                ]
+            },
+            asia: {  // ATSI = No, Ethnicity = Asia
+                ranges: [
+                    { label: 'Less than 90cm', sfValue: 'Less than 90cm' },
+                    { label: '90cm - 100cm', sfValue: '90 - 100cm' },
+                    { label: 'More than 100cm', sfValue: 'More than 100cm' }
+                ]
+            },
+            other: {  // ATSI = No, Ethnicity = Not Asia
+                ranges: [
+                    { label: 'Less than 102cm', sfValue: 'Less than 102 cm' },
+                    { label: '102cm - 110cm', sfValue: '102-110cm' },
+                    { label: 'More than 110cm', sfValue: 'More than 110cm' }
+                ]
+            }
+        },
+        female: {
+            atsi: {  // Aboriginal or Torres Strait Islander = Yes
+                ranges: [
+                    { label: 'Less than 80cm', sfValue: 'Less than 80cm' },
+                    { label: '80cm - 90cm', sfValue: '80-90cm' },
+                    { label: 'More than 90cm', sfValue: 'More than 90cm' }
+                ]
+            },
+            asia: {  // ATSI = No, Ethnicity = Asia
+                ranges: [
+                    { label: 'Less than 80cm', sfValue: 'Less than 80cm' },
+                    { label: '80cm - 90cm', sfValue: '80-90cm' },
+                    { label: 'More than 90cm', sfValue: 'More than 90cm' }
+                ]
+            },
+            other: {  // ATSI = No, Ethnicity = Not Asia
+                ranges: [
+                    { label: 'Less than 88cm', sfValue: 'Less than 88 cm' },
+                    { label: '88cm - 100cm', sfValue: '88-100cm' },
+                    { label: 'More than 100cm', sfValue: 'More than 100cm' }
+                ]
+            }
+        }
+    };
+
+    // Function to render table HTML from ranges data
+    function renderWaistTable(rangesData) {
+        const desktopTable = `
+            <table class="-desktop waist-table">
+                <thead>
+                    <tr>
+                        <th>Range</th>
+                        <th>1</th>
+                        <th>2</th>
+                        <th>3</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Waist (cm)</td>
+                        <td>${rangesData[0].label}</td>
+                        <td>${rangesData[1].label}</td>
+                        <td>${rangesData[2].label}</td>
+                    </tr>
+                </tbody>
+            </table>
+        `;
+
+        const mobileTable = `
+            <table class="-mobile waist-table">
+                <tbody>
+                    <tr>
+                        <th>Waist (cm)</th>
+                        <th>Range</th>
+                    </tr>
+                    <tr>
+                        <td>${rangesData[0].label}</td>
+                        <td>1</td>
+                    </tr>
+                    <tr>
+                        <td>${rangesData[1].label}</td>
+                        <td>2</td>
+                    </tr>
+                    <tr>
+                        <td>${rangesData[2].label}</td>
+                        <td>3</td>
+                    </tr>
+                </tbody>
+            </table>
+        `;
+
+        return desktopTable + mobileTable;
+    }
+
+    // Function to get appropriate waist table HTML based on gender, ATSI status, and ethnicity
+    function getWaistTableHTML(gender, atsiStatus, ethnicity) {
+        // Determine category: atsi, asia, or other
+        let category = '';
+        if (atsiStatus === 'yes') {
+            category = 'atsi';
+        } else if (ethnicity.startsWith('asia')) {
+            category = 'asia';
+        } else {
+            category = 'other';
+        }
+
+        // Get ranges data from waistTableData
+        const genderData = waistTableData[gender];
+        if (!genderData) return '';
+
+        const categoryData = genderData[category];
+        if (!categoryData || !categoryData.ranges) return '';
+
+        return renderWaistTable(categoryData.ranges);
+    }
+
+    // Function to update waist table inside .gfield.q11 .gfield_description
+    function updateWaistTable() {
+        const $form = $(`form.${lhcFormClass}`);
+        const $q1 = $form.find('.gfield.q1 input[type=radio]:checked');
+        const $q3 = $form.find('.gfield.q3 input[type=radio]:checked');
+        const $q4Select = $form.find('.gfield.q4 select');
+        const $q11Description = $form.find('.gfield.q11 .gfield_description');
+
+        // If q11 description doesn't exist, exit early
+        if (!$q11Description.length) {
+            return;
+        }
+
+        // Get current values
+        const gender = $q1.val() ? $q1.val().toString().trim().toLowerCase() : '';
+        const atsiStatus = $q3.val() ? $q3.val().toString().trim().toLowerCase() : '';
+        const ethnicity = $q4Select.val() ? $q4Select.val().toString().trim().toLowerCase() : '';
+
+        // If we don't have required values, don't update table
+        if (!gender) {
+            return;
+        }
+
+        // Get the appropriate table HTML
+        const tableHTML = getWaistTableHTML(gender, atsiStatus, ethnicity);
+
+        // Find or create the waist-table-container
+        let $container = $q11Description.find('.waist-table-container');
+
+        if (!$container.length) {
+            // Create container if it doesn't exist
+            $container = $('<div class="waist-table-container"></div>');
+            $q11Description.append($container);
+        }
+
+        // Update container with new table HTML
+        $container.html(tableHTML);
+
+        // After updating table, trigger fillWaistResult to update the result field
+        setTimeout(function () {
+            fillWaistResult();
+        }, 100);
+    }
+
 
     // Function to update radio button labels with first character
     function updateRadioButtonLabels() {
@@ -437,6 +534,7 @@ jQuery(function ($) {
         updateRadioButtonLabels();
         updateSidebarProgressSteps();
         updateQ12OptionsVisibility();
+        updateWaistTable(); // Initialize waist table on page load
 
         let hasHCViewed = false;
         if (!hasHCViewed) {
@@ -455,6 +553,11 @@ jQuery(function ($) {
 
         // Small delay to let conditional logic render
         setTimeout(function () {
+            // Update waist table when q1, q3, or q4 changes
+            if ($changedField.hasClass('q1') || $changedField.hasClass('q3') || $changedField.hasClass('q4')) {
+                updateWaistTable();
+            }
+
             // Only call fillWaistResult if the changed field is q1, q3, q4, or q11
             if ($changedField.hasClass('q1') || $changedField.hasClass('q3') ||
                 $changedField.hasClass('q4') || $changedField.hasClass('q11')) {
@@ -475,6 +578,8 @@ jQuery(function ($) {
             updateSidebarProgressSteps();
             $(`form.${lhcFormClass}`).removeClass('loading');
             $(`header.top-nav`).addClass('hidden');
+            $('.sidebar .get-started-section .desc').hide();
+            $('.ss-health-check .sidebar').addClass('mobile-hidden');
             // Animate scroll to the form, offset 220px, smooth
             let $formWrapper = $(`.life-health-check .form-wrapper`);
             if ($formWrapper.length) {
@@ -486,7 +591,7 @@ jQuery(function ($) {
                 $('.form-wrapper .share-wrapper').show();
             }
 
-            const ausdriskResult = $('input#ausdrisk-result').val().trim();
+            const ausdriskResult = $('input#ausdrisk-tracking-result').val().trim();
 
             trackEvent(`${trackingEventPrefix}_Results`, {
                 form_id: lhcFormId,
@@ -521,10 +626,21 @@ jQuery(function ($) {
             updateRadioButtonLabels();
             updateSidebarProgressSteps();
             updateQ12OptionsVisibility();
+            updateWaistTable();
             $(`form.${lhcFormClass}`).addClass('loading');
             setTimeout(function () {
                 $(`form.${lhcFormClass}`).removeClass('loading');
             }, 300);
+        }
+        if ($(`form.${lhcFormClass}`).length > 0) {
+            $(`form.${lhcFormClass} .gform_page.intro .gform_next_button`)
+                .attr('id', 'btn-start-hc');
+
+            $(`form.${lhcFormClass} .gform_page.details .gform_next_button`)
+                .attr('id', 'btn-confirm-hc');
+
+            $(`form.${lhcFormClass} .gform_page.questions .gform_next_button`)
+                .attr('id', 'btn-check-score-hc');
         }
     });
 
@@ -534,6 +650,7 @@ jQuery(function ($) {
             updateRadioButtonLabels();
             updateSidebarProgressSteps();
             updateQ12OptionsVisibility();
+            updateWaistTable();
             $(`form.${lhcFormClass}`).addClass('loading');
             setTimeout(function () {
                 $(`form.${lhcFormClass}`).removeClass('loading');
@@ -559,6 +676,7 @@ jQuery(function ($) {
             $(`form.${lhcFormClass}`).addClass('loading');
             $(`header.top-nav`).addClass('hidden');
             updateQ12OptionsVisibility();
+            updateWaistTable();
             // Animate scroll to the form, offset 220px, smooth
             let $formWrapper = $(`.life-health-check .form-wrapper`);
             if ($formWrapper.length) {
@@ -627,12 +745,23 @@ jQuery(function ($) {
         window.location.hash = 'check-score';
     });
 
-    $(document).on('click change input focus blur',
-        `form.${lhcFormClass} .gform_page.details .gfield select, 
-        form.${lhcFormClass} .gform_page.details .gfield input`,
-        function () {
-            validateDetailsPageFields();
-        });
+    // let detailsPageValidationTimer = null;
+    // $(document).on('change input focus blur',
+    //     `form.${lhcFormClass} .gform_page.details .gfield select, 
+    //     form.${lhcFormClass} .gform_page.details .gfield input`,
+    //     function (e) {
+    //         if ($(this).attr('type') === 'button' || $(this).attr('type') === 'submit') {
+    //             return;
+    //         }
+    //         // Clear previous timer to debounce validation calls
+    //         if (detailsPageValidationTimer) {
+    //             clearTimeout(detailsPageValidationTimer);
+    //         }
+    //         // Delay to let blur event handlers (300ms) add is_valid class first
+    //         detailsPageValidationTimer = setTimeout(function () {
+    //             validateDetailsPageFields();
+    //         }, 350);
+    //     });
 
     let postcodeTimer = null;
 
@@ -658,14 +787,26 @@ jQuery(function ($) {
         parentField.find('.validation_message').remove();
         AcceptableNonVicMess.hide();
         nextButton.prop('disabled', true);
-        pageFooter.hide();
-
-        // Do NOT validate until user finishes typing 4 digits
-        if (!/^\d{0,4}$/.test(value) || value.length < 4) {
-            return;
-        }
+        pageFooter.hide().removeClass('active');
 
         postcodeTimer = setTimeout(function () {
+
+            // Check if user entered invalid format (not 4 digits)
+            if (value.length > 0 && (!/^\d{0,4}$/.test(value) || value.length < 4)) {
+                // Show validation error for invalid postcode format
+                parentField.addClass('gfield_error is_invalid');
+
+                if (parentField.find('.validation_message').length === 0) {
+                    const validationText = getCaldText('form_validation_message.validation_postcode', 'Please enter a valid postcode');
+                    parentField.find('.ginput_container').append('<div class="gfield_description validation_message gfield_validation_message">' + escapeHtml(validationText) + '</div>');
+                }
+                return;
+            }
+            // If empty or valid format but not complete, just return without showing error
+            if (value.length < 4) {
+                return;
+            }
+
             // Load acceptable non-VIC postcodes
             let nonVicPostcodes = [];
             const nonVicInput = $('#non_vic_postcodes_json');
@@ -683,25 +824,27 @@ jQuery(function ($) {
             // ❌ 4 digits but not valid
             if (!isVicPostcode && !isAcceptableNonVic) {
                 AcceptableNonVicMess.slideDown(200);
-                parentField.addClass('is_invalid');
+                parentField.addClass('is_invalid').removeClass('gfield_error is_valid');
+                parentField.find('.ginput_container').find('.validation_message').remove();
                 nextButton.prop('disabled', true);
-                pageFooter.hide();
+                pageFooter.hide().removeClass('active');
                 return;
             }
 
             // ✅ Valid postcode
-            parentField.addClass('is_valid');
+            parentField.addClass('is_valid').removeClass('gfield_error is_invalid');
+            parentField.find('.ginput_container').find('.validation_message').remove();
             nextButton.prop('disabled', false);
-            pageFooter.slideDown(200).css('display', 'flex');
+            pageFooter.slideDown(200).addClass('active');
             AcceptableNonVicMess.hide();
 
-        }, 400); // debounce time
+        }, 500); // debounce time
     }
     );
 
 
     // On change event for Full Name field in .life-health-check-form
-    $(document).on('blur', `form.${lhcFormClass} .gfield.first_name input[type=text], form.${lhcFormClass} .gfield.last_name input[type=text]`, function () {
+    $(document).on('change input blur', `form.${lhcFormClass} .gfield.first_name input[type=text], form.${lhcFormClass} .gfield.last_name input[type=text]`, function () {
         if (!$(this).closest('.gfield').hasClass('gfield_contains_required')) {
             return;
         }
@@ -709,6 +852,7 @@ jQuery(function ($) {
         let currentPage = $input.closest('.gform_page');
         let parentField = $input.closest('.gfield');
         let value = $.trim($input.val());
+        currentPage.find('.gform_next_button').prop('disabled', true);
 
         setTimeout(function () {
             // Regex: single name with valid characters, length 2–50
@@ -726,7 +870,7 @@ jQuery(function ($) {
                     if (parentField.hasClass('first_name')) {
                         validationText = getCaldText(
                             'form_validation_message.validation_first_name',
-                            'Please provide your first name - example: Jo'
+                            'Please provide your first name - example: John'
                         );
                     } else {
                         validationText = getCaldText(
@@ -748,13 +892,14 @@ jQuery(function ($) {
                     .find('.validation_message')
                     .remove();
             }
+            validateDetailsPageFields();
 
         }, 300);
     });
 
 
     // On change event for email field in .life-health-check-form with email validation
-    $(document).on('blur', `form.${lhcFormClass} .gfield.email input[type=email]`, function () {
+    $(document).on('change input blur', `form.${lhcFormClass} .gfield.email input[type=email]`, function () {
         if (!$(this).closest('.gfield').hasClass('gfield_contains_required')) {
             return;
         }
@@ -765,6 +910,7 @@ jQuery(function ($) {
         // Basic email validation regex
         let emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         let isEmailValid = emailPattern.test(value);
+        currentPage.find('.gform_next_button').prop('disabled', true);
 
         setTimeout(function () {
             if (!value || value.trim().length === 0 || !isEmailValid) {
@@ -777,10 +923,9 @@ jQuery(function ($) {
             } else {
                 parentField.removeClass('gfield_error is_invalid').addClass('is_valid').find('.validation_message').remove();
             }
+            validateDetailsPageFields();
 
         }, 300);
-
-        $('input#lhc_user_email').val(value);
     });
 
     // On change event for select field in .life-health-check-form with email validation
@@ -845,8 +990,8 @@ jQuery(function ($) {
             return;
         }
         let $changed = $(this);
+        let currentPage = $changed.closest('.gform_page');
         let parentField = $changed.closest('.gfield');
-        let currentPage = parentField.closest('.gform_page');
         let $checkboxes = parentField.find('input[type=checkbox]');
 
         if (parentField.hasClass('q12')) {
@@ -865,6 +1010,11 @@ jQuery(function ($) {
                 // If any box other than "None of the below" is checked, uncheck "None of the below"
                 $noneCheckbox.prop('checked', false);
             }
+        }
+
+        if (parentField.hasClass('confirm-contact')) {
+            currentPage.find('.gform_next_button').prop('disabled', true);
+            validateDetailsPageFields();
         }
     });
 
@@ -918,6 +1068,47 @@ jQuery(function ($) {
     let hasConfirmedHC = false;
     // On change event for radio fields
     $(document).on('click', `form.${lhcFormClass} .gform_page.details .gform_next_button`, function () {
+
+        const $detailsPage = $(this).closest(`.gform_page.details`);
+        // Early return if not on visible details page
+        if (!$detailsPage.length) return;
+
+        const $firstName = $detailsPage.find('.gfield.first_name input[type=text]').val();
+        const $lastName = $detailsPage.find('.gfield.last_name input[type=text]').val();
+        const $email = $detailsPage.find('.gfield.email input[type=email]').val();
+        const $postCode = $(`form.${lhcFormClass} .gfield.postcode input[type=number]`).val();
+
+        // Submit via AJAX
+        $.ajax({
+            url: (typeof lifeAjax !== 'undefined' && lifeAjax.ajaxurl) ? lifeAjax.ajaxurl : '/wp-admin/admin-ajax.php',
+            type: 'POST',
+            data: {
+                action: 'life_update_lead_details',
+                nonce: (typeof lifeAjax !== 'undefined' && lifeAjax.updateLeadDetailsNonce) ? lifeAjax.updateLeadDetailsNonce : '',
+                email: $email,
+                first_name: $firstName,
+                last_name: $lastName,
+                postcode: $postCode
+            },
+            success: function (response) {
+                if (response.success) {
+                    console.log('Lead inserted successfully:', response);
+                } else {
+                    // Salesforce validation error or other error
+                    console.error('Lead insertion failed:', response);
+                    if (response.data && response.data.message) {
+                        console.error('Error message:', response.data.message);
+                    }
+                    if (response.data && response.data.sf_errors) {
+                        console.error('Salesforce errors:', response.data.sf_errors);
+                    }
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error('AJAX error:', { xhr, status, error });
+            }
+        });
+
         // Prevent duplicate firing
         if (hasConfirmedHC) {
             return;
@@ -985,8 +1176,8 @@ jQuery(function ($) {
         }
 
         // Disable submit button
-        const $submitBtn = $form.find('#btn-ausdrisk-final-submit');
-        $submitBtn.prop('disabled', true).val('Submitting...');
+        const $submitBtn = $form.find('#btn-submit-eoi');
+        $submitBtn.prop('disabled', true).addClass('loading');
 
         trackEvent(`${trackingEventPrefix}_Submit_EOI`, {
             form_id: lhcFormId,
@@ -1001,8 +1192,8 @@ jQuery(function ($) {
             url: (typeof lifeAjax !== 'undefined' && lifeAjax.ajaxurl) ? lifeAjax.ajaxurl : '/wp-admin/admin-ajax.php',
             type: 'POST',
             data: {
-                action: 'life_update_lead_phone',
-                nonce: (typeof lifeAjax !== 'undefined' && lifeAjax.updateLeadPhoneNonce) ? lifeAjax.updateLeadPhoneNonce : '',
+                action: 'life_update_lead_eoi',
+                nonce: (typeof lifeAjax !== 'undefined' && lifeAjax.updateLeadEOINonce) ? lifeAjax.updateLeadEOINonce : '',
                 email: email,
                 phone: phoneValue,
                 entry_id: entryId,
@@ -1012,14 +1203,12 @@ jQuery(function ($) {
             },
             success: function (response) {
                 if (response.success) {
-                    $form.find('.field, .input-container').hide();
+                    $form.remove();
                     var $thankYouMess = $('.gform_confirmation_wrapper .thank-you-mess');
                     $thankYouMess.slideDown(300, function () {
                         if ($thankYouMess.length) {
                             var containerOffset = $thankYouMess.offset().top;
-                            var containerHeight = $thankYouMess.outerHeight();
-                            var windowHeight = $(window).height();
-                            var scrollTo = containerOffset - (windowHeight / 2) + (containerHeight / 2);
+                            var scrollTo = containerOffset - 100; // 100px offset from top
                             $('html, body').animate({ scrollTop: Math.max(scrollTo, 0) }, 300);
 
                             trackEvent(`${trackingEventPrefix}_Thankyou`, {
@@ -1034,12 +1223,12 @@ jQuery(function ($) {
                     $('.form-wrapper .share-wrapper').show();
                 } else {
                     $validateMess.text(response.data && response.data.message ? response.data.message : 'An error occurred. Please try again.').show();
-                    $submitBtn.prop('disabled', false).val('Submit');
+                    $submitBtn.prop('disabled', false).removeClass('loading');
                 }
             },
             error: function (xhr, status, error) {
                 $validateMess.text('An error occurred. Please try again.').show();
-                $submitBtn.prop('disabled', false).val('Submit');
+                $submitBtn.prop('disabled', false).removeClass('loading');
             }
         });
 
@@ -1175,8 +1364,8 @@ jQuery(function ($) {
             // Restore validity/completion states for visible fields (useful after page navigation)
             this.restoreFieldStates();
 
-            // Sync q12-divider visibility with q12 field
-            this.syncQ12DividerVisibility();
+            // Sync q11-mandatory-text style with q11 field
+            this.syncQ11MandatoryTextStyle();
 
             // Disable page footer buttons initially
             this.updatePageFooterState();
@@ -1230,10 +1419,9 @@ jQuery(function ($) {
                 // Field is no longer valid - mark as incomplete
                 $field.removeClass('completed-field');
             }
-            // Sync q12-divider visibility when ausdrisk-score changes
-            if ($field.hasClass('ausdrisk-score')) {
-                this.syncQ12DividerVisibility();
-            }
+
+            this.syncQ11MandatoryTextStyle();
+
             // Always update footer state whether field is valid or not
             this.updatePageFooterState();
         }
@@ -1308,26 +1496,25 @@ jQuery(function ($) {
                     $field.removeClass('completed-field');
                 }
             });
-            // Sync q12-divider visibility after restoring field states
-            this.syncQ12DividerVisibility();
+            // Sync q11-mandatory-text style after restoring field states
+            this.syncQ11MandatoryTextStyle();
         }
 
-        // Sync q12-divider section visibility based on ausdrisk-score value
-        syncQ12DividerVisibility() {
-            const $ausdriskScoreField = this.form.find('.gfield.ausdrisk-score');
-            const $q12Divider = this.form.find('.gsection.q12-divider');
+        // Sync q11-mandatory-text opacity based on q11 disabled state
+        syncQ11MandatoryTextStyle() {
+            const $q11Field = this.form.find('.gfield.q11');
+            const $q11MandatoryText = this.form.find('.gfield.q11-mandatory-text.gfield_html');
 
-            if (!$ausdriskScoreField.length || !$q12Divider.length) return;
+            if (!$q11Field.length || !$q11MandatoryText.length) return;
 
-            // Get the ausdrisk-score input value
-            const $scoreInput = $ausdriskScoreField.find('input[type="number"], input[type="text"]');
-            const scoreValue = parseFloat($scoreInput.val()) || 0;
+            // Check if q11 field has disabled-field class
+            const isQ11Disabled = $q11Field.hasClass('disabled-field');
 
-            // Show divider if score < 12, hide otherwise
-            if (scoreValue < 12) {
-                $q12Divider.show();
+            // Set opacity based on q11's state
+            if (isQ11Disabled) {
+                $q11MandatoryText.css('opacity', '0.5');
             } else {
-                $q12Divider.hide();
+                $q11MandatoryText.css('opacity', '1');
             }
         }
 

@@ -2,26 +2,23 @@
 body {
   // Health Check page wrapper
   &.life-health-check {
-    #breadcrumbs {
-    @media (max-width: 480px) {
-        padding: 24px 0 28px;
-    }
-      ul {
-        @media (max-width: 480px) {
-            margin: 0;
-        }
-        li {
-          &:last-child {
-            display: inherit !important;
-          }
-        }
-      }
-    }
-
     .hero-banner-sml {
+      @media (max-width: 767px) {
+        max-height: 220px;
+      }
       .-bg {
         img {
           animation: none !important;
+        }
+      }
+      .-text {
+        @media (max-width: 767px) {
+          padding-top: 70px;
+        }
+        h1 {
+          @media (max-width: 767px) {
+            font-size: 1.75rem;
+          }
         }
       }
     }
@@ -48,8 +45,21 @@ body {
         }
       }
       #breadcrumbs {
-        ul li em {
-          margin-right: 4px;
+        @media (max-width: 1024px) {
+          padding: 24px 0;
+        }
+        @media (max-width: 480px) {
+          padding: 20px 0;
+        }
+        ul {
+          li {
+            &:last-child {
+              display: inherit !important;
+            }
+            em {
+              margin-right: 4px;
+            }
+          }
         }
       }
     }
@@ -128,6 +138,11 @@ body {
     .sidebar {
       width: 100%;
       max-width: 340px;
+      &.mobile-hidden {
+        @media (max-width: 767px) {
+          display: none;
+        }
+      }
       @media (max-width: 1500px) {
        max-width: 300px;
       }
@@ -165,7 +180,7 @@ body {
           margin: 0 0 20px 0;
           line-height: 1.2;
           @media (max-width: 767px) {
-            font-size: 30px;
+            font-size: 26px;
           }
         }
 
@@ -174,6 +189,9 @@ body {
           color: #000;
           margin: 0 0 24px 0;
           line-height: 1.6;
+          @media (max-width: 767px) {
+            display: none;
+          }
         }
 
         .languages {
@@ -269,7 +287,7 @@ body {
         padding-bottom: 32px;
         border-bottom: 1px solid #C6C6C6;
         @media (max-width: 767px) {
-          margin-bottom: 24px;
+          margin-bottom: 12px;
           padding-bottom: 0;
         }
 
@@ -423,6 +441,9 @@ body {
             padding: 12px 14px;
             gap: 6px;
           }
+          @media (max-width: 480px) {
+            width: 100%;
+          }
           &:hover {
             background-color: #f47b20;
           }
@@ -477,6 +498,18 @@ body {
           grid-column-gap: 20px;
           .gfield {
             position: relative;
+            &.q11-mandatory-text {
+              margin: 30px 0 0;
+              font-size: 15px;
+              @media (max-width: 767px) {
+                margin: 8px 0 0;
+              }
+            }
+            &.diabetes {
+              .gfield_label {
+                max-width: 420px;
+              }
+            }
             &.last_name {
               > .gfield_description {
                 display: none;
@@ -487,7 +520,16 @@ body {
             }
             &.q11 {
               .gfield_label {
-                margin-bottom: 80px;
+                margin-bottom: 180px;
+                @media (max-width: 767px) {
+                  margin-bottom: 272px;
+                }
+                @media (max-width: 500px) {
+                  margin-bottom: 290px;
+                }
+                @media (max-width: 400px) {
+                  margin-bottom: 280px;
+                }
               }
               .gfield_description {
                 position: absolute;
@@ -504,7 +546,27 @@ body {
               }
             }
             &.q12 {
+              position: relative;
+              padding-top: 80px;
+              @media (max-width: 767px) {
+                padding-top: 32px;
+              }
+              &::before {
+                content: "";
+                width: 100%;
+                height: 1px;
+                background-color: #C6C6C6;
+                position: absolute;
+                top: -70px;
+                left: 0;
+                right: 0;
+              }
               .gfield_label {
+                position: relative;
+                top: 80px;
+                @media (max-width: 767px) {
+                  top: 32px;
+                }
                 &::after {
                   content: " *";
                   color: #c02b0a;
@@ -536,6 +598,9 @@ body {
               border-bottom: 1px solid #C6C6C6;
               @media (max-width:767px) {
                 margin: 16px 0 30px;
+              }
+              @media (max-width:480px) {
+                margin: 0 0 20px;
               }
               .gsection_description {
                 padding: 0;
@@ -579,7 +644,7 @@ body {
                 line-height: 1.4;
                 font-weight: bold;
                 @media (max-width:767px) {
-                  margin-bottom: 22px;
+                  margin-bottom: 16px;
                   font-size: 18px;
                 }
             }
@@ -593,6 +658,9 @@ body {
               font-size: 15px;
               font-weight: 400;
               line-height: 1.6;
+              @media (max-width:767px) {
+                margin-top: 20px;
+              }
 
               &:first-child {
                 margin-top: 0;
@@ -605,6 +673,12 @@ body {
               margin-bottom: 20px;
               padding-bottom: 0;
               border-bottom: none;
+              @media (max-width:767px) {
+                margin-bottom: 14px;
+              }
+              & > *:last-child {
+                margin-bottom: 0;
+              }
             }
             &.first_name,
             &.last_name,
@@ -612,9 +686,15 @@ body {
               padding-bottom: 0;
               margin-bottom: 16px;
               border-bottom: none;
+              @media (max-width:767px) {
+                margin-bottom: 8px;
+                .gfield_description {
+                  margin-top: 10px;
+                }
+              }
 
               .gfield_label {
-                font-size: 15px;
+                font-size: 16px;
                 line-height: 1.1;
                 font-weight: 500;
                 margin-bottom: 12px;
@@ -642,6 +722,7 @@ body {
               font-weight: bold;
               color: #f47b20;
               @media (max-width: 767px) {
+                margin-bottom: 16px;
                 font-size: 20px;
               }
             }
@@ -651,7 +732,7 @@ body {
               font-weight: 400;
               line-height: 1.6;
               @media (max-width:767px) {
-                margin: 20px 0;
+                margin: 16px 0;
               }
             }
             strong, b {
@@ -740,7 +821,6 @@ body {
               }
               .ginput_container_select {
                 position: relative;
-
                 select {
                   background-color: var(--brandMidGreen);
                 }
@@ -773,6 +853,9 @@ body {
               flex-direction: column;
               gap: 20px;
               margin: 0;
+              @media (max-width:767px) {
+                gap: 14px;
+              }
 
               .gchoice {
                 margin: 0;
@@ -836,7 +919,8 @@ body {
                     background-position: 12px center;
                     background-repeat: no-repeat;
                     @media (max-width:767px) {
-                        padding: 12px 12px 12px 50px;
+                      padding: 10px 12px 10px 46px;
+                      font-size: 18px;
                     }
                   }
                   p {
@@ -848,7 +932,11 @@ body {
 
             .ginput_container_select {
               position: relative;
-
+              select {
+                cursor: pointer;
+                position: relative;
+                z-index: 1;
+              }
               &::after {
                 content: "";
                 position: absolute;
@@ -860,6 +948,8 @@ body {
                 background-image: url("/wp-content/themes/life/assets/imgs/chevron-down.svg");
                 background-size: cover;
                 background-repeat: no-repeat;
+                cursor: pointer;
+                z-index: 0;
               }
             }
 
@@ -1272,10 +1362,13 @@ body {
         text-transform: uppercase;
         box-sizing: border-box;
         cursor: pointer;
-
         &:hover {
-          color: var(--brandMidGreen, #218662);
           background-color: #fff;
+        }
+        &.loading {
+          opacity: 0.5;
+          cursor: default;
+          pointer-events: none;
         }
       }
       .wp-block-button {

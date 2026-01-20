@@ -1,31 +1,29 @@
 // Main Life Health Check functionality, rewritten to use jQuery document ready instead of IIFE pattern
-
 jQuery(function ($) {
     'use strict';
 
-    // Get localized CALD languages and gravity form ID
-    const lhcFormId = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.gravityFormId)
-        ? lifeHealthCheck.gravityFormId
-        : 2;
+    // Define constants
+    const lhcFormId = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.gravityFormId) ? lifeHealthCheck.gravityFormId : 2;
     const lhcFormClass = 'life-health-check-form';
-    const caldLanguages = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.caldLanguages)
-        ? lifeHealthCheck.caldLanguages
-        : {};
-
-    const dvRedirectUrl = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.dvRedirectUrl)
-        ? lifeHealthCheck.dvRedirectUrl
-        : "/living-with-diabetes/";
-
-    const trackingEventPrefix = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.trackingEventPrefix)
-        ? lifeHealthCheck.trackingEventPrefix
-        : "English";
+    const caldLanguages = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.caldLanguages) ? lifeHealthCheck.caldLanguages : {};
+    const dvRedirectUrl = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.dvRedirectUrl) ? lifeHealthCheck.dvRedirectUrl : "/living-with-diabetes/";
+    const trackingEventPrefix = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.trackingEventPrefix) ? lifeHealthCheck.trackingEventPrefix : "English";
+    const hcMainSection = $('body.life-health-check .health-check-section');
+    const hcFormSidebar = hcMainSection.find('.sidebar');
+    const hcFormWrapper = hcMainSection.find('.hc-form-wrapper');
+    const hcForm = hcFormWrapper.find(`form.${lhcFormClass}`);
+    const introPage = hcForm.find('.gform_page.intro');
+    const detailsPage = hcForm.find('.gform_page.details');
+    const questionsPage = hcForm.find('.gform_page.questions');
+    const introNextButton = introPage.find('.gform_next_button');
+    const detailsNextButton = detailsPage.find('.gform_next_button');
+    const hcSubmitButton = hcForm.find('.gform_button[type="submit"]');
 
     // Helper function to get CALD text with fallback
     function getCaldText(key, defaultValue) {
         if (!caldLanguages || Object.keys(caldLanguages).length === 0) {
             return defaultValue;
         }
-
         const keys = key.split('.');
         let value = caldLanguages;
 
@@ -36,7 +34,6 @@ jQuery(function ($) {
                 return defaultValue;
             }
         }
-
         return value || defaultValue;
     }
 
@@ -45,6 +42,26 @@ jQuery(function ($) {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    // Helper function for responsive smooth scrolling
+    // Uses native window.scrollTo on mobile (<767px) for better performance
+    // Uses jQuery animate on desktop (>=767px) for smoother control and slower speed
+    function smoothScrollTo(targetPosition, duration = 300) {
+        const isMobile = $(window).width() < 767;
+
+        if (isMobile) {
+            // Mobile: use native smooth scroll (faster, better performance on iOS)
+            window.scrollTo({
+                top: targetPosition,
+                behavior: 'smooth'
+            });
+        } else {
+            // Desktop: use jQuery animate with custom duration for smoother, slower scroll
+            $('html, body').animate({
+                scrollTop: targetPosition
+            }, duration, 'swing');
+        }
     }
 
     // Prevent Enter key from submitting form on intro/details pages
@@ -77,7 +94,7 @@ jQuery(function ($) {
         }
     });
 
-    // Centralized validation function for details page (name + email + confirm-contact checkbox)
+    // Centralized validation function for details page (name + email + confirm_contact checkbox)
     function validateDetailsPageFields() {
         const detailsPage = $(`form.${lhcFormClass} .gform_page.details`);
         // Early return if not on visible details page
@@ -86,7 +103,7 @@ jQuery(function ($) {
         const firstNameField = detailsPage.find('.gfield.first_name');
         const lastNameField = detailsPage.find('.gfield.last_name');
         const emailField = detailsPage.find('.gfield.email');
-        const confirmField = detailsPage.find('.gfield.confirm-contact');
+        const confirmField = detailsPage.find('.gfield.confirm_contact');
         const nextButton = detailsPage.find('.gform_next_button');
 
         nextButton.prop('disabled', true);
@@ -179,15 +196,6 @@ jQuery(function ($) {
         if ($otherField.length) {
             $otherField.val('');
         }
-
-        // console.log('✅ Waist result filled:', {
-        //     gender: gender,
-        //     category: category,
-        //     selectedRange: selectedRange,
-        //     rangeIndex: rangeIndex,
-        //     sfValue: sfValue,
-        //     isAsiaAb: isAsiaAb
-        // });
     }
 
     // Comprehensive waist table data structure
@@ -579,16 +587,14 @@ jQuery(function ($) {
             $(`form.${lhcFormClass}`).removeClass('loading');
             $(`header.top-nav`).addClass('hidden');
             $('.sidebar .get-started-section .desc').hide();
-            $('.ss-health-check .sidebar').addClass('mobile-hidden');
+            $('.health-check-section .sidebar').addClass('mobile-hidden');
             // Animate scroll to the form, offset 220px, smooth
-            let $formWrapper = $(`.life-health-check .form-wrapper`);
+            let $formWrapper = $(`.life-health-check .hc-form-wrapper`);
             if ($formWrapper.length) {
-                $('html, body').animate({
-                    scrollTop: Math.max($formWrapper.offset().top - 220, 0)
-                }, 400, 'swing');
+                smoothScrollTo(Math.max($formWrapper.offset().top - 220, 0), 300);
             }
-            if ($('.form-wrapper .thank-you-mess').length === 0) {
-                $('.form-wrapper .share-wrapper').show();
+            if ($('.hc-form-wrapper .thank-you-mess').length === 0) {
+                $('.hc-form-wrapper .share-wrapper').show();
             }
 
             const ausdriskResult = $('input#ausdrisk-tracking-result').val().trim();
@@ -678,11 +684,9 @@ jQuery(function ($) {
             updateQ12OptionsVisibility();
             updateWaistTable();
             // Animate scroll to the form, offset 220px, smooth
-            let $formWrapper = $(`.life-health-check .form-wrapper`);
+            let $formWrapper = $(`.life-health-check .hc-form-wrapper`);
             if ($formWrapper.length) {
-                $('html, body').animate({
-                    scrollTop: Math.max($formWrapper.offset().top - 220, 0)
-                }, 400, 'swing');
+                smoothScrollTo(Math.max($formWrapper.offset().top - 220, 0), 300);
             }
 
             setTimeout(function () {
@@ -744,24 +748,6 @@ jQuery(function ($) {
         // Add hash to URL
         window.location.hash = 'check-score';
     });
-
-    // let detailsPageValidationTimer = null;
-    // $(document).on('change input focus blur',
-    //     `form.${lhcFormClass} .gform_page.details .gfield select, 
-    //     form.${lhcFormClass} .gform_page.details .gfield input`,
-    //     function (e) {
-    //         if ($(this).attr('type') === 'button' || $(this).attr('type') === 'submit') {
-    //             return;
-    //         }
-    //         // Clear previous timer to debounce validation calls
-    //         if (detailsPageValidationTimer) {
-    //             clearTimeout(detailsPageValidationTimer);
-    //         }
-    //         // Delay to let blur event handlers (300ms) add is_valid class first
-    //         detailsPageValidationTimer = setTimeout(function () {
-    //             validateDetailsPageFields();
-    //         }, 350);
-    //     });
 
     let postcodeTimer = null;
 
@@ -959,9 +945,7 @@ jQuery(function ($) {
             if ($nextField.length) {
                 let targetScroll = $nextField.offset().top - 200;
                 setTimeout(function () {
-                    $('html, body').animate({
-                        scrollTop: targetScroll
-                    }, 300, 'swing');
+                    smoothScrollTo(targetScroll, 300);
                     $('header.top-nav').addClass('hidden');
                 }, 300);
             }
@@ -1012,7 +996,7 @@ jQuery(function ($) {
             }
         }
 
-        if (parentField.hasClass('confirm-contact')) {
+        if (parentField.hasClass('confirm_contact')) {
             currentPage.find('.gform_next_button').prop('disabled', true);
             validateDetailsPageFields();
         }
@@ -1025,7 +1009,7 @@ jQuery(function ($) {
         let parentField = $inputRadio.closest('.gfield');
 
         if (value || value.trim().length > 0) {
-            if (parentField.hasClass('diabetes') && value.toLowerCase() === 'yes') {
+            if (parentField.hasClass('living_with_diabetes') && value.toLowerCase() === 'yes') {
                 setTimeout(function () {
                     window.open(dvRedirectUrl, '_blank');
                     return; // Stop further processing after redirect
@@ -1037,9 +1021,7 @@ jQuery(function ($) {
                 if ($nextField.length) {
                     let targetScroll = $nextField.offset().top - 200;
                     setTimeout(function () {
-                        $('html, body').animate({
-                            scrollTop: targetScroll
-                        }, 300, 'swing');
+                        smoothScrollTo(targetScroll, 300);
                         $('header.top-nav').addClass('hidden');
                     }, 300);
                 }
@@ -1092,7 +1074,7 @@ jQuery(function ($) {
             },
             success: function (response) {
                 if (response.success) {
-                    console.log('Lead inserted successfully:', response);
+                    // console.log('Lead inserted successfully:', response);
                 } else {
                     // Salesforce validation error or other error
                     console.error('Lead insertion failed:', response);
@@ -1177,6 +1159,7 @@ jQuery(function ($) {
 
         // Disable submit button
         const $submitBtn = $form.find('#btn-submit-eoi');
+        $phoneInput.prop('disabled', true);
         $submitBtn.prop('disabled', true).addClass('loading');
 
         trackEvent(`${trackingEventPrefix}_Submit_EOI`, {
@@ -1209,7 +1192,7 @@ jQuery(function ($) {
                         if ($thankYouMess.length) {
                             var containerOffset = $thankYouMess.offset().top;
                             var scrollTo = containerOffset - 100; // 100px offset from top
-                            $('html, body').animate({ scrollTop: Math.max(scrollTo, 0) }, 300);
+                            smoothScrollTo(Math.max(scrollTo, 0), 300);
 
                             trackEvent(`${trackingEventPrefix}_Thankyou`, {
                                 form_id: lhcFormId,
@@ -1220,10 +1203,11 @@ jQuery(function ($) {
                             window.location.hash = 'thankyou';
                         }
                     });
-                    $('.form-wrapper .share-wrapper').show();
+                    $('.hc-form-wrapper .share-wrapper').show();
                 } else {
                     $validateMess.text(response.data && response.data.message ? response.data.message : 'An error occurred. Please try again.').show();
                     $submitBtn.prop('disabled', false).removeClass('loading');
+                    $phoneInput.prop('disabled', false);
                 }
             },
             error: function (xhr, status, error) {
@@ -1311,7 +1295,7 @@ jQuery(function ($) {
                     'first_name',
                     'last_name',
                     'email',
-                    'confirm-contact',
+                    'confirm_contact',
                     'waist-result-asia-ab',
                     'waist-result-other',
                 ];

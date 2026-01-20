@@ -28,7 +28,7 @@ function life_enqueue_main() {
     ];
     $cald_languages = get_field('cald_languages', $post_id);
     $gravity_form_id = get_field('gravity_form_id', $post_id) ?: 2;
-    $dv_redirect_url = get_field('diabetes_victoria_redirect_url', 'options') ?: 'https://www.diabetesvic.org.au/';
+    $dv_redirect_url = get_field('diabetes_victoria_redirect_url', 'options') ?: '/living-with-diabetes/';
     $ausdrisk_language = get_field('ausdrisk_language', $post_id);
     $tracking_event_prefix = $events_prefix_arr[$ausdrisk_language] ?? 'English';
 

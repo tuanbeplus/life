@@ -109,9 +109,12 @@ function postDataToSalesforce($sf_data) {
 
 /**
  * Query Salesforce Lead by email address
+ * 
+ * When multiple duplicate leads exist with the same email, this function
+ * returns the latest lead based on CreatedDate (newest first).
  *
  * @param string $email
- * @return array|false Returns Lead record with Id on success, false on failure
+ * @return array|false Returns the latest Lead record with Id on success, false on failure
  */
 function queryLeadByEmail($email) {
     $curlHandleForToken = curl_init();
@@ -124,7 +127,10 @@ function queryLeadByEmail($email) {
         
         // Escape single quotes in email for SOQL query
         $escapedEmail = str_replace("'", "\\'", $email);
-        $query = "SELECT Id, Email, Phone FROM Lead WHERE Email = '" . $escapedEmail . "' LIMIT 1";
+        
+        // Query all leads with this email, ordered by CreatedDate (newest first)
+        // This ensures we get the latest lead when duplicates exist
+        $query = "SELECT Id, Email, Phone, CreatedDate FROM Lead WHERE Email = '" . $escapedEmail . "' ORDER BY CreatedDate DESC";
         $queryUrl = $auth->instance_url . '/services/data/v52.0/query/?q=' . urlencode($query);
         
         curl_setopt($ch, CURLOPT_URL, $queryUrl);
@@ -144,7 +150,9 @@ function queryLeadByEmail($email) {
         
         if ($httpCode == 200) {
             $data = json_decode($response, true);
+            // Return the first record (latest by CreatedDate) if any exist
             if (isset($data['records']) && count($data['records']) > 0) {
+                error_log('queryLeadByEmail: ' . json_encode($data));
                 return $data['records'][0];
             }
         }

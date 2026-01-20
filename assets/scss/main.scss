@@ -65,50 +65,8 @@ body {
     }
   }
 
-  // Hero Section
-  .ss-hero {
-    position: relative;
-
-    img {
-      width: 100%;
-      object-fit: cover;
-      display: block;
-      @media (max-width: 767px) {
-        height: 290px;
-      }
-      @media (max-width: 480px) {
-        height: 230px;
-      }
-    }
-
-    .page-tilte {
-      position: absolute;
-      left: 50%;
-      bottom: 34%;
-      transform: translate(-50%, 0);
-      width: 100%;
-      text-align: center;
-      @media (max-width: 767px) {
-        bottom: 24%;
-      }
-    }
-
-    h1 {
-      font-size: 55px;
-      font-weight: 500;
-      color: #fff;
-      line-height: 1.2;
-      @media (max-width: 767px) {
-        font-size: 40px;
-      }
-      @media (max-width: 480px) {
-        font-size: 32px;
-      }
-    }
-  }
-
   // Health Check Section
-  .ss-health-check {
+  .health-check-section {
     padding-bottom: 100px;
     background-color: transparent;
     @media (max-width: 480px) {
@@ -413,7 +371,7 @@ body {
       }
     }
 
-    .form-wrapper {
+    .hc-form-wrapper {
       width: 100%;
       .share-wrapper {
         display: none;
@@ -505,7 +463,7 @@ body {
                 margin: 8px 0 0;
               }
             }
-            &.diabetes {
+            &.living_with_diabetes {
               .gfield_label {
                 max-width: 420px;
               }
@@ -692,7 +650,6 @@ body {
                   margin-top: 10px;
                 }
               }
-
               .gfield_label {
                 font-size: 16px;
                 line-height: 1.1;
@@ -700,7 +657,7 @@ body {
                 margin-bottom: 12px;
               }
             }
-            &.confirm-contact {
+            &.confirm_contact {
               margin-top: 14px;
               .gfield_checkbox .gchoice label {
                 display: flex;

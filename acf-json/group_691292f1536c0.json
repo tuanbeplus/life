@@ -351,27 +351,6 @@
                     "acfe_group_modal": 0,
                     "sub_fields": [
                         {
-                            "key": "field_69129c65e6eec",
-                            "label": "Only 2 minutes",
-                            "name": "only_2_minutes",
-                            "aria-label": "",
-                            "type": "text",
-                            "instructions": "",
-                            "required": 0,
-                            "conditional_logic": 0,
-                            "wrapper": {
-                                "width": "",
-                                "class": "",
-                                "id": ""
-                            },
-                            "default_value": "It only takes 2 minutes!",
-                            "maxlength": "",
-                            "allow_in_bindings": 0,
-                            "placeholder": "",
-                            "prepend": "",
-                            "append": ""
-                        },
-                        {
                             "key": "field_69129d62e6eed",
                             "label": "Validation Postcode",
                             "name": "validation_postcode",
@@ -513,5 +492,5 @@
     "acfe_form": 0,
     "acfe_meta": "",
     "acfe_note": "",
-    "modified": 1767673521
+    "modified": 1768275170
 }

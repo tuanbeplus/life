@@ -34,7 +34,7 @@ function get_cald_text($key, $default = '') {
 <div class="page">
     <?php echoTemplate('hero-banner/hero-banner-sml'); ?>
     <?php echoTemplate('widget/breadcrumbs'); ?>
-    <section class="ss-health-check center-frame">
+    <section class="health-check-section center-frame">
         <div class="container">
             <div class="sidebar">
                 <!-- Get Started Section -->
@@ -88,7 +88,7 @@ function get_cald_text($key, $default = '') {
                     <a href="tel:137475" class="phone-number"><span class="phone-digits risk-13-wcag">13 74 75</span></a>
                 </div>
             </div>
-            <div class="form-wrapper">
+            <div class="hc-form-wrapper">
                 <div class="non_vic_postcodes-block" style="display:none;">
                     <input id="non_vic_postcodes_json" type="hidden" value="<?php echo esc_attr( $non_vic_postcodes ); ?>">
                 </div>

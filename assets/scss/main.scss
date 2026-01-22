@@ -139,6 +139,7 @@ body {
           line-height: 1.2;
           @media (max-width: 767px) {
             font-size: 26px;
+            display: none;
           }
         }
 
@@ -1090,313 +1091,322 @@ body {
     }
   }
 
-  // Gravity Forms confirmation message
-  .gform_confirmation_wrapper {
-    .final-step-form {
+#thank-you {
+  margin-top: 40px;
+  @media (max-width: 767px) {
+    margin-top: 32px;
+  }
+}
+
+// Gravity Forms confirmation message
+.gform_confirmation_wrapper, #thank-you {
+  .final-step-form {
+    position: relative;
+    display: flex;
+    gap: 20px;
+    @media (max-width: 767px) {
+      flex-wrap: wrap;
+    }
+    .field {
       position: relative;
-      display: flex;
-      gap: 20px;
-      @media (max-width: 767px) {
-        flex-wrap: wrap;
+      width: 100%;
+      label {
+        position: absolute;
+        width: 0;
+        height: 0;
+        opacity: 0;
       }
-      .field {
-        position: relative;
+      input[type=tel], input[type=text] {
         width: 100%;
-        label {
-          position: absolute;
-          width: 0;
-          height: 0;
-          opacity: 0;
-        }
-        input[type=tel], input[type=text] {
-          width: 100%;
-          border: 2px solid #111;
-        }
+        border: 2px solid #111;
       }
-      .input-container {
+    }
+    .input-container {
+      @media (max-width: 767px) {
+        width: 100%;
+      }
+      input[type=submit] {
+        margin: 0 !important;
+        height: 56px;
+        color: #000;
         @media (max-width: 767px) {
           width: 100%;
         }
-        input[type=submit] {
-          margin: 0 !important;
-          height: 56px;
-          color: #000;
-          @media (max-width: 767px) {
-            width: 100%;
-          }
-        }
-      }
-      .validate-mess {
-        display: none;
-        position: absolute;
-        left: 0;
-        bottom: -30px;
-        font-size: 14px;
-        font-weight: 400;
-        color: #FF0000;
       }
     }
-    .cta-btn, .button {
-      margin: 24px 0;
-      padding: 13px 26px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 15px;
-      line-height: 1.2;
-      font-family: "Poppins";
-      font-weight: normal;
-      text-transform: none;
-      border: 2px solid #f47b20;
-      border-radius: 12px;
-      color: #111 !important;
-      background-color: #fff;
-      text-decoration: none !important;
-      gap: 10px;
-      width: fit-content;
-      transition: all 0.3s !important;
-      &:hover {
-        background-color: #f47b20;
-      }
-      .icon {
-        font-size: 8px;
-      }
-    }
-    .gform_confirmation_message {
-      // Base font, color, and text
-      font-size: 15px;
+    .validate-mess {
+      display: none;
+      position: absolute;
+      left: 0;
+      bottom: -30px;
+      font-size: 14px;
       font-weight: 400;
+      color: #FF0000;
+    }
+  }
+  .cta-btn, .button {
+    margin: 24px 0;
+    padding: 13px 26px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 15px;
+    line-height: 1.2;
+    font-family: "Poppins";
+    font-weight: normal;
+    text-transform: none;
+    border: 2px solid #f47b20;
+    border-radius: 12px;
+    color: #111 !important;
+    background-color: #fff;
+    text-decoration: none !important;
+    gap: 10px;
+    width: fit-content;
+    transition: all 0.3s !important;
+    &:hover {
+      background-color: #f47b20;
+    }
+    .icon {
+      font-size: 8px;
+    }
+  }
+  .gform_confirmation_message, .thank-you-message {
+    // Base font, color, and text
+    font-size: 15px;
+    font-weight: 400;
+    color: #000;
+    line-height: 1.6;
+
+    // Headings
+    h1, h2, h3, h4, h5, h6 {
+      font-weight: bold;
+      margin: 0 0 24px 0;
+      line-height: 1.4;
       color: #000;
+    }
+    h1 { font-size: 1.7rem !important; }
+    h2 { font-size: 1.5rem !important; }
+    h3 { font-size: 1.3rem !important; }
+    h4 { font-size: 1.2rem !important; }
+    h5 { font-size: 1.1rem !important; }
+    h6 { font-size: 1.05rem !important; }
+
+    // Paragraphs
+    p, .wp-block-paragraph {
+      font-size: 15px;
+      margin: 0 0 24px 0;
+      font-weight: 400;
       line-height: 1.6;
+      color: #000;
+      @media (max-width: 767px) {
+        margin: 0 0 20px 0;
+      }
+    }
 
-      // Headings
-      h1, h2, h3, h4, h5, h6 {
-        font-weight: bold;
-        margin: 0 0 24px 0;
-        line-height: 1.4;
-        color: #000;
-      }
-      h1 { font-size: 1.7rem !important; }
-      h2 { font-size: 1.5rem !important; }
-      h3 { font-size: 1.3rem !important; }
-      h4 { font-size: 1.2rem !important; }
-      h5 { font-size: 1.1rem !important; }
-      h6 { font-size: 1.05rem !important; }
+    // Blockquote
+    blockquote, .wp-block-quote {
+      border-left: 5px solid var(--brandMidGreen, #218662);
+      margin: 24px 0;
+      padding: 12px 24px;
+      font-style: italic;
+      background: #f8f8f8;
+      color: #333;
+    }
 
-      // Paragraphs
-      p, .wp-block-paragraph {
-        font-size: 15px;
-        margin: 0 0 24px 0;
-        font-weight: 400;
-        line-height: 1.6;
-        color: #000;
+    // Lists
+    ul, ol, .wp-block-list {
+      list-style-position: inside;
+      margin: 20px 0;
+      padding: 0 0 0 20px;
+      color: #000;
+      max-width: 700px;
+    }
+    ul {
+      list-style: disc inside;
+    }
+    ol {
+      list-style: decimal inside;
+    }
+    li, .wp-block-list li {
+      margin-bottom: 13px;
+      font-size: 15px;
+      line-height: 1.5;
+      color: #000;
+      * {
+        margin-bottom: 0 !important;
+      }
+    }
+    // Benefit-style list when has images (as in example)
+    ul:has(img), ul.benefits-list, .benefits-list {
+      list-style: none;
+      padding: 0;
+      margin: 32px 0;
+      text-align: left;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
 
-        // &:first-of-type {
-        //   margin-bottom: 32px;
-        //   font-size: 16px;
-        // }
-      }
+      li {
+        margin-bottom: 20px;
+        padding-bottom: 20px;
+        display: flex;
+        align-items: flex-start;
+        gap: 15px;
+        border-bottom: 1px solid #c6c6c6;
 
-      // Blockquote
-      blockquote, .wp-block-quote {
-        border-left: 5px solid var(--brandMidGreen, #218662);
-        margin: 24px 0;
-        padding: 12px 24px;
-        font-style: italic;
-        background: #f8f8f8;
-        color: #333;
-      }
-
-      // Lists
-      ul, ol, .wp-block-list {
-        list-style-position: inside;
-        margin: 20px 0;
-        padding: 0 0 0 20px;
-        color: #000;
-        max-width: 700px;
-      }
-      ul {
-        list-style: disc inside;
-      }
-      ol {
-        list-style: decimal inside;
-      }
-      li, .wp-block-list li {
-        margin-bottom: 13px;
-        font-size: 15px;
-        line-height: 1.5;
-        color: #000;
         * {
-          margin-bottom: 0 !important;
-        }
-      }
-      // Benefit-style list when has images (as in example)
-      ul:has(img), ul.benefits-list, .benefits-list {
-        list-style: none;
-        padding: 0;
-        margin: 32px 0;
-        text-align: left;
-        max-width: 600px;
-        margin-left: auto;
-        margin-right: auto;
-
-        li {
-          margin-bottom: 20px;
-          padding-bottom: 20px;
+          margin: 0;
+          font-size: 15px;
+          color: #000;
+          line-height: 1.5;
           display: flex;
-          align-items: flex-start;
-          gap: 15px;
-          border-bottom: 1px solid #c6c6c6;
-
-          * {
-            margin: 0;
-            font-size: 15px;
-            color: #000;
-            line-height: 1.5;
-            display: flex;
-            align-items: center;
-          }
-
-          img {
-            width: 40px;
-            height: 40px;
-            object-fit: contain;
-            flex-shrink: 0;
-            margin-right: 15px;
-            display: block;
-          }
+          align-items: center;
         }
-      }
-
-      // Images & figures
-      img, .wp-block-image img {
-        max-width: 100%;
-        height: auto;
-        display: inline-block;
-        vertical-align: middle;
-      }
-      figure, .wp-block-image {
-        margin: 24px auto;
-        text-align: center;
 
         img {
-          margin: 0 auto;
+          width: 40px;
+          height: 40px;
+          object-fit: contain;
+          flex-shrink: 0;
+          margin-right: 15px;
+          display: block;
         }
-        figcaption {
-          font-size: 14px;
-          color: #666;
-          margin-top: 10px;
-        }
-      }
-
-      // Anchor/link styling
-      a, .wp-block-button__link {
-        color: var(--brandTealSeaweed, #077986);
-        text-decoration: underline;
-        text-underline-offset: 3px;
-        text-decoration-thickness: 2px;
-        transition: color 0.2s;
-
-        &:hover {
-          color: var(--brandMidGreen, #218662);
-        }
-      }
-
-      // CTA Button and similar buttons
-      .cta_button, .wp-block-button__link, input[type="submit"] {
-        display: inline-block;
-        padding: 13px 30px;
-        font-size: 15px;
-        font-weight: 600;
-        color: #fff;
-        background-color: var(--brandMidGreen, #218662);
-        border: 2px solid var(--brandMidGreen, #218662);
-        border-radius: 12px;
-        text-decoration: none;
-        margin-right: 20px;
-        margin-bottom: 10px;
-        transition: all 0.3s ease;
-        text-transform: uppercase;
-        box-sizing: border-box;
-        cursor: pointer;
-        &:hover {
-          background-color: #fff;
-        }
-        &.loading {
-          opacity: 0.5;
-          cursor: default;
-          pointer-events: none;
-        }
-      }
-      .wp-block-button {
-        display: inline-block;
-      }
-
-      // Strong and bold
-      b, strong, .wp-block-bold {
-        font-weight: 600;
-      }
-      // Italic/emphasis support
-      em, i {
-        font-style: italic;
-      }
-
-      // HR
-      hr, .wp-block-separator {
-        border: none;
-        height: 1px;
-        background-color: #C6C6C6;
-        margin: 40px 0;
-      }
-
-      // Table styles
-      table, .wp-block-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 32px 0;
-        color: #000;
-
-        th, td {
-          padding: 12px 10px;
-          border: 1px solid #eee;
-        }
-        th {
-          background-color: var(--brandMidGreen, #218662);
-          color: #fff;
-          font-weight: 600;
-          text-align: left;
-        }
-        td {
-          font-size: 14px;
-        }
-        tr:nth-child(even) td {
-          background-color: #f8f8f8;
-        }
-      }
-
-      // Code and pre
-      code, pre {
-        font-family: 'Fira Mono', 'Consolas', monospace;
-        font-size: 14px;
-        background: #f5f5f5;
-        color: #234;
-        padding: 2px 8px;
-        border-radius: 6px;
-      }
-      pre {
-        display: block;
-        padding: 16px;
-        margin: 18px 0;
-        white-space: pre-wrap;
-        overflow-x: auto;
-      }
-
-      // Remove top margin from first child, bottom margin from last
-      > *:first-child {
-        margin-top: 0;
-      }
-      > *:last-child {
-        margin-bottom: 0;
       }
     }
+
+    // Images & figures
+    img, .wp-block-image img {
+      max-width: 100%;
+      height: auto;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    figure, .wp-block-image {
+      margin: 24px auto;
+      text-align: center;
+
+      img {
+        margin: 0 auto;
+      }
+      figcaption {
+        font-size: 14px;
+        color: #666;
+        margin-top: 10px;
+      }
+    }
+
+    // Anchor/link styling
+    a, .wp-block-button__link {
+      color: var(--brandTealSeaweed, #077986);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      text-decoration-thickness: 2px;
+      transition: color 0.2s;
+
+      &:hover {
+        color: var(--brandMidGreen, #218662);
+      }
+    }
+
+    // CTA Button and similar buttons
+    .cta_button, .wp-block-button__link, input[type="submit"] {
+      min-width: 225.5px;
+      display: inline-block;
+      padding: 13px 30px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+      background-color: var(--brandMidGreen, #218662);
+      border: 2px solid var(--brandMidGreen, #218662);
+      border-radius: 12px;
+      text-decoration: none;
+      margin-right: 20px;
+      margin-bottom: 10px;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      box-sizing: border-box;
+      cursor: pointer;
+      &:hover {
+        background-color: #fff;
+      }
+      &.loading {
+        opacity: 0.6;
+        cursor: default;
+        pointer-events: none;
+      }
+    }
+    .wp-block-button {
+      display: inline-block;
+    }
+
+    // Strong and bold
+    b, strong, .wp-block-bold {
+      font-weight: 600;
+    }
+    // Italic/emphasis support
+    em, i {
+      font-style: italic;
+    }
+
+    // HR
+    hr, .wp-block-separator {
+      border: none;
+      height: 1px;
+      background-color: #C6C6C6;
+      margin: 40px 0 32px;
+      @media (max-width: 767px) {
+        margin: 32px 0 24px;
+      }
+    }
+
+    // Table styles
+    table, .wp-block-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 32px 0;
+      color: #000;
+
+      th, td {
+        padding: 12px 10px;
+        border: 1px solid #eee;
+      }
+      th {
+        background-color: var(--brandMidGreen, #218662);
+        color: #fff;
+        font-weight: 600;
+        text-align: left;
+      }
+      td {
+        font-size: 14px;
+      }
+      tr:nth-child(even) td {
+        background-color: #f8f8f8;
+      }
+    }
+
+    // Code and pre
+    code, pre {
+      font-family: 'Fira Mono', 'Consolas', monospace;
+      font-size: 14px;
+      background: #f5f5f5;
+      color: #234;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+    pre {
+      display: block;
+      padding: 16px;
+      margin: 18px 0;
+      white-space: pre-wrap;
+      overflow-x: auto;
+    }
+
+    // Remove top margin from first child, bottom margin from last
+    > *:first-child {
+      margin-top: 0;
+    }
+    > *:last-child {
+      margin-bottom: 0;
+    }
+  }
 }

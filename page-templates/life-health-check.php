@@ -93,6 +93,23 @@ function get_cald_text($key, $default = '') {
                     <input id="non_vic_postcodes_json" type="hidden" value="<?php echo esc_attr( $non_vic_postcodes ); ?>">
                 </div>
                 <?php echo do_shortcode( '[gravityform id="' . esc_attr($gravity_form_id) . '" title="false" description="false" ajax="true"]' ); ?>
+                <div id="thank-you" style="display: none;">
+                    <div class="thank-you-message">
+                        <hr />
+                        <?php 
+                        $thank_you_message = get_field('thank_you_message', get_the_ID());
+                        if (!empty($thank_you_message)) {
+                            echo wpautop($thank_you_message);
+                        } else {
+                            echo '<h2>Congratulations - your health journey starts here!</h2>';
+                            echo '<p>Thank you for submitting your details. You can expect a call from us within the <strong>next 24-48 hours.</strong></p>';
+                            echo '<p>While you wait, head on over to our <strong>Health Hub</strong> for tips, recipes and advice to help you start making small, healthy changes today.</p>';
+                            echo '<a class="cta-btn" href="/health-hub/" target="_blank">Visit the health hub</a>';
+                            echo '<h3><strong>Know someone who might benefit from the <em>Life!</em> program?</strong></h3>';
+                        }
+                        ?>
+                    </div>
+                </div>
                 <div class="share-wrapper"><inline-dialog-share></inline-dialog-share></div>
             </div>
         </div>

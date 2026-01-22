@@ -411,6 +411,13 @@ jQuery(function ($) {
             $('.sidebar .languages').show();
         }
 
+        if ($(`#gf_step_${lhcFormId}_1`).hasClass('gf_step_completed') && $(window).width() < 768) {
+            $('.sidebar .get-started-section .heading').hide();
+        }
+        else {
+            $('.sidebar .get-started-section .heading').show();
+        }
+
         // Update heading text based on form state
         if (confirmationPage) {
             heading.text(getCaldText('main_heading.results', 'Results'));
@@ -593,9 +600,11 @@ jQuery(function ($) {
             if ($formWrapper.length) {
                 smoothScrollTo(Math.max($formWrapper.offset().top - 220, 0), 300);
             }
-            if ($('.hc-form-wrapper .thank-you-mess').length === 0) {
-                $('.hc-form-wrapper .share-wrapper').show();
-            }
+            setTimeout(function () {
+                if ($('input#ausdrisk-tracking-result').val().trim() === 'ineligible') {
+                    $('.hc-form-wrapper .share-wrapper').show();
+                }
+            }, 100);
 
             const ausdriskResult = $('input#ausdrisk-tracking-result').val().trim();
 
@@ -950,6 +959,10 @@ jQuery(function ($) {
                 }, 300);
             }
         }
+
+        if (parentField.hasClass('q11') || parentField.hasClass('q12')) {
+            parentField.click();
+        }
     });
 
     $(document).on('click', '.gfield .btn-clear-select', function () {
@@ -1000,6 +1013,10 @@ jQuery(function ($) {
             currentPage.find('.gform_next_button').prop('disabled', true);
             validateDetailsPageFields();
         }
+
+        if (parentField.hasClass('q11') || parentField.hasClass('q12')) {
+            parentField.click();
+        }
     });
 
     // On change event for radio fields
@@ -1026,6 +1043,10 @@ jQuery(function ($) {
                     }, 300);
                 }
             }
+        }
+
+        if (parentField.hasClass('q11') || parentField.hasClass('q12')) {
+            parentField.click();
         }
     });
 
@@ -1160,7 +1181,7 @@ jQuery(function ($) {
         // Disable submit button
         const $submitBtn = $form.find('#btn-submit-eoi');
         $phoneInput.prop('disabled', true);
-        $submitBtn.prop('disabled', true).addClass('loading');
+        $submitBtn.prop('disabled', true).addClass('loading').val('Submitting...');
 
         trackEvent(`${trackingEventPrefix}_Submit_EOI`, {
             form_id: lhcFormId,
@@ -1187,7 +1208,7 @@ jQuery(function ($) {
             success: function (response) {
                 if (response.success) {
                     $form.remove();
-                    var $thankYouMess = $('.gform_confirmation_wrapper .thank-you-mess');
+                    var $thankYouMess = $('.hc-form-wrapper #thank-you');
                     $thankYouMess.slideDown(300, function () {
                         if ($thankYouMess.length) {
                             var containerOffset = $thankYouMess.offset().top;
@@ -1206,13 +1227,14 @@ jQuery(function ($) {
                     $('.hc-form-wrapper .share-wrapper').show();
                 } else {
                     $validateMess.text(response.data && response.data.message ? response.data.message : 'An error occurred. Please try again.').show();
-                    $submitBtn.prop('disabled', false).removeClass('loading');
+                    $submitBtn.prop('disabled', false).removeClass('loading').val('Take The Next Step');
                     $phoneInput.prop('disabled', false);
                 }
             },
             error: function (xhr, status, error) {
                 $validateMess.text('An error occurred. Please try again.').show();
-                $submitBtn.prop('disabled', false).removeClass('loading');
+                $submitBtn.prop('disabled', false).removeClass('loading').val('Take The Next Step');
+                $phoneInput.prop('disabled', false);
             }
         });
 

@@ -199,7 +199,8 @@ function life_ajax_update_lead_eoi() {
 }
 
 /**
- * AJAX handler to insert Salesforce Lead details by email
+ * AJAX handler to update or insert Salesforce Lead details by email
+ * If lead exists, updates the latest one; otherwise inserts a new lead
  */
 add_action('wp_ajax_life_update_lead_details', 'life_ajax_update_lead_details');
 add_action('wp_ajax_nopriv_life_update_lead_details', 'life_ajax_update_lead_details');
@@ -247,51 +248,12 @@ function life_ajax_update_lead_details() {
     return;
   }
 
-  // Insert Lead in Salesforce
+  // Check if Lead already exists in Salesforce
   $sf_errors = [];
   $sf_lead_id = null;
+  $sf_action = 'insert'; // Track whether we insert or update
   
-  if (function_exists('\SfFuncs\postDataToSalesforce')) {
-      // Prepare data for insert 
-      $sf_insert_data = [
-        'RecordTypeId' => '01290000000sizUAAQ',
-        'Status' => 'No Score',
-        'User_Status_Detail__c' => 'Warm',
-        'Email' => $email,
-        'FirstName' => $first_name,
-        'LastName' => $last_name,
-        'PostalCode' => $postcode,
-        'CONSENT_TO_OBTAIN_INFORMATION__c' => true,
-        'History_of_CVD__c' => 'No',
-        'Had_GDM__c' => 'No',
-        'LeadSource' => 'Web Request',
-      ];
-      
-      // Insert Lead into Salesforce
-      $sf_errors = \SfFuncs\postDataToSalesforce($sf_insert_data);
-      
-      // Check if insertion was successful (no errors)
-      if (!empty($sf_errors)) {
-        // Salesforce returned errors - return error response with details
-        $error_messages = [];
-        foreach ($sf_errors as $error) {
-          if (isset($error['message'])) {
-            $error_messages[] = $error['message'];
-          }
-        }
-        
-        wp_send_json_error([
-          'message' => 'Failed to insert Lead: ' . implode(', ', $error_messages),
-          'sf_errors' => $sf_errors,
-          'email' => $email,
-          'first_name' => $first_name,
-          'last_name' => $last_name,
-          'postcode' => $postcode,
-        ]);
-        return;
-      }
-
-  } else {
+  if (!function_exists('\SfFuncs\queryLeadByEmail')) {
     wp_send_json_error([
       'message' => 'Salesforce functions not available.',
       'sf_errors' => [['message' => 'Salesforce functions not available.']],
@@ -299,8 +261,114 @@ function life_ajax_update_lead_details() {
     return;
   }
   
+  // Query for existing lead by email (returns latest lead if multiple exist)
+  $existing_lead = \SfFuncs\queryLeadByEmail($email);
+  $sf_lead_id = $existing_lead['Id'] ?? '';
+  $sf_lead_status = $existing_lead['Status'] ?? '';
+  
+  // Prepare data for update or insert
+  $sf_data = [
+    'FirstName' => $first_name,
+    'LastName' => $last_name,
+    'PostalCode' => $postcode,
+    'Status' => 'No Score',
+    'User_Status_Detail__c' => 'Warm',
+    'CONSENT_TO_OBTAIN_INFORMATION__c' => true,
+  ];
+  
+  if ($existing_lead && !empty($sf_lead_id) && $sf_lead_status !== 'EOI received') {
+    // Lead exists - UPDATE the latest lead
+    $sf_action = 'update';
+    
+    if (!function_exists('\SfFuncs\updateLeadById')) {
+      wp_send_json_error([
+        'message' => 'Salesforce update function not available.',
+        'sf_errors' => [['message' => 'updateLeadById function not available.']],
+      ]);
+      return;
+    }
+
+    if ($sf_lead_status == 'No EOI') {
+      $sf_data['Status'] = 'No EOI';
+      $sf_data['User_Status_Detail__c'] = 'Hot';
+    }
+    
+    // Update Lead in Salesforce
+    $sf_errors = \SfFuncs\updateLeadById($sf_lead_id, $sf_data);
+    
+    // Check if update was successful (no errors)
+    if (!empty($sf_errors)) {
+      // Salesforce returned errors - return error response with details
+      $error_messages = [];
+      foreach ($sf_errors as $error) {
+        if (isset($error['message'])) {
+          $error_messages[] = $error['message'];
+        }
+      }
+      
+      wp_send_json_error([
+        'message' => 'Failed to update Lead: ' . implode(', ', $error_messages),
+        'sf_errors' => $sf_errors,
+        'sf_lead_id' => $sf_lead_id,
+        'email' => $email,
+        'first_name' => $first_name,
+        'last_name' => $last_name,
+        'postcode' => $postcode,
+      ]);
+      return;
+    }
+    
+  } else {
+    // INSERT new lead
+    $sf_action = 'insert';
+    
+    if (!function_exists('\SfFuncs\postDataToSalesforce')) {
+      wp_send_json_error([
+        'message' => 'Salesforce insert function not available.',
+        'sf_errors' => [['message' => 'postDataToSalesforce function not available.']],
+      ]);
+      return;
+    }
+    
+    // Add required fields for new lead creation
+    $sf_data['RecordTypeId'] = '01290000000sizUAAQ';
+    $sf_data['Status'] = 'No Score';
+    $sf_data['User_Status_Detail__c'] = 'Warm';
+    $sf_data['Email'] = $email;
+    $sf_data['CONSENT_TO_OBTAIN_INFORMATION__c'] = true;
+    $sf_data['History_of_CVD__c'] = 'No';
+    $sf_data['Had_GDM__c'] = 'No';
+    $sf_data['LeadSource'] = 'Web Request';
+    
+    // Insert Lead into Salesforce
+    $sf_errors = \SfFuncs\postDataToSalesforce($sf_data);
+    
+    // Check if insertion was successful (no errors)
+    if (!empty($sf_errors)) {
+      // Salesforce returned errors - return error response with details
+      $error_messages = [];
+      foreach ($sf_errors as $error) {
+        if (isset($error['message'])) {
+          $error_messages[] = $error['message'];
+        }
+      }
+      
+      wp_send_json_error([
+        'message' => 'Failed to insert Lead: ' . implode(', ', $error_messages),
+        'sf_errors' => $sf_errors,
+        'email' => $email,
+        'first_name' => $first_name,
+        'last_name' => $last_name,
+        'postcode' => $postcode,
+      ]);
+      return;
+    }
+  }
+  
   wp_send_json_success([
-    'message' => 'Lead inserted successfully.',
+    'message' => 'Lead ' . $sf_action . 'd successfully.',
+    'action' => $sf_action,
+    'sf_lead_id' => $sf_lead_id,
     'email' => $email,
     'first_name' => $first_name,
     'last_name' => $last_name,

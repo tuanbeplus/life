@@ -130,7 +130,7 @@ function queryLeadByEmail($email) {
         
         // Query all leads with this email, ordered by CreatedDate (newest first)
         // This ensures we get the latest lead when duplicates exist
-        $query = "SELECT Id, Email, Phone, CreatedDate FROM Lead WHERE Email = '" . $escapedEmail . "' ORDER BY CreatedDate DESC";
+        $query = "SELECT Id, Email, Phone, CreatedDate, Status FROM Lead WHERE Email = '" . $escapedEmail . "' ORDER BY CreatedDate DESC";
         $queryUrl = $auth->instance_url . '/services/data/v52.0/query/?q=' . urlencode($query);
         
         curl_setopt($ch, CURLOPT_URL, $queryUrl);
@@ -152,8 +152,7 @@ function queryLeadByEmail($email) {
             $data = json_decode($response, true);
             // Return the first record (latest by CreatedDate) if any exist
             if (isset($data['records']) && count($data['records']) > 0) {
-                error_log('queryLeadByEmail: ' . json_encode($data));
-                return $data['records'][0];
+                return $data['records'][0] ?? false;
             }
         }
     }

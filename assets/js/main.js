@@ -44,6 +44,19 @@ jQuery(function ($) {
         return div.innerHTML;
     }
 
+    // Helper function to trigger WP Cron immediately (non-blocking)
+    function triggerBackgroundSync() {
+        try {
+            // Fire and forget request to wp-cron.php
+            const cronUrl = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.siteUrl) ?
+                lifeHealthCheck.siteUrl + '/wp-cron.php?doing_wp_cron' : '/wp-cron.php?doing_wp_cron';
+
+            fetch(cronUrl, { mode: 'no-cors' }).catch(() => { });
+        } catch (e) {
+            // Ignore errors
+        }
+    }
+
     // Helper function for responsive smooth scrolling
     // Uses native window.scrollTo on mobile (<767px) for better performance
     // Uses jQuery animate on desktop (>=767px) for smoother control and slower speed
@@ -367,33 +380,45 @@ jQuery(function ($) {
 
     // Function to update radio button labels with first character
     function updateRadioButtonLabels() {
+        // PERF: The old approach injected a new <style> per label per render (random class),
+        // which can create thousands of style tags during GF AJAX navigation.
+        // This version is idempotent: one global style rule + a data attribute per label.
+
+        const styleId = 'lhc-radio-first-char-style';
+        if (!document.getElementById(styleId)) {
+            const style = document.createElement('style');
+            style.id = styleId;
+            style.textContent = `
+                form.${lhcFormClass} .gfield_radio .gchoice label[data-radio-first-char]::before {
+                    content: attr(data-radio-first-char) !important;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
         $(`form.${lhcFormClass} .gfield_radio .gchoice label`).each(function () {
             const $label = $(this);
-            const labelText = $label.text().trim();
-            if (labelText) {
-                const firstChar = labelText.charAt(0).toUpperCase();
-                // Create a unique class for this specific label
-                const uniqueClass = 'radio-label-' + Math.random().toString(36).substr(2, 9);
-                $label.addClass(uniqueClass);
 
-                // Add dynamic CSS for this specific label
-                if (!$('#' + uniqueClass + '-style').length) {
-                    $('<style id="' + uniqueClass + '-style">')
-                        .text('.' + uniqueClass + '::before { content: "' + firstChar + '" !important; }')
-                        .appendTo('head');
-                }
-            }
+            // Skip if already processed
+            if ($label.attr('data-radio-first-char')) return;
+
+            const labelText = ($label.text() || '').trim();
+            if (!labelText) return;
+
+            const firstChar = labelText.charAt(0).toUpperCase();
+            $label.attr('data-radio-first-char', firstChar);
         });
     }
 
     function updateSidebarProgressSteps() {
-        // Get all Gravity Forms steps
-        const gformSteps = $(`.gform_wrapper .gf_page_steps .gf_step`);
+        // PERF: Scope DOM queries to the Health Check form only (avoid scanning other GF instances).
+        const $gformWrapper = $(`#gform_wrapper_${lhcFormId}`);
+        const gformSteps = $gformWrapper.find(`.gf_page_steps .gf_step`);
 
         // Check if we're on confirmation page
-        const confirmationPage = $('.gform_confirmation_wrapper').length > 0 ||
-            $('.gform_confirmation_message').length > 0 ||
-            $('.gform_wrapper').hasClass('gform_confirmation');
+        const confirmationPage = $gformWrapper.find('.gform_confirmation_wrapper').length > 0 ||
+            $gformWrapper.find('.gform_confirmation_message').length > 0 ||
+            $gformWrapper.hasClass('gform_confirmation');
 
         // Mapping: sidebar steps to Gravity Forms steps
         const stepMapping = {
@@ -600,11 +625,10 @@ jQuery(function ($) {
             if ($formWrapper.length) {
                 smoothScrollTo(Math.max($formWrapper.offset().top - 220, 0), 300);
             }
-            setTimeout(function () {
-                if ($('input#ausdrisk-tracking-result').val().trim() === 'ineligible') {
-                    $('.hc-form-wrapper .share-wrapper').show();
-                }
-            }, 100);
+
+            if ($('input#ausdrisk-tracking-result').val().trim() === 'ineligible') {
+                $('.hc-form-wrapper .share-wrapper').show();
+            }
 
             const ausdriskResult = $('input#ausdrisk-tracking-result').val().trim();
 
@@ -1095,7 +1119,9 @@ jQuery(function ($) {
             },
             success: function (response) {
                 if (response.success) {
-                    // console.log('Lead inserted successfully:', response);
+                    // console.log('Lead inserted/updated successfully:', response);
+                    // Trigger background sync immediately
+                    triggerBackgroundSync();
                 } else {
                     // Salesforce validation error or other error
                     console.error('Lead insertion failed:', response);
@@ -1207,6 +1233,8 @@ jQuery(function ($) {
             },
             success: function (response) {
                 if (response.success) {
+                    // Trigger background sync immediately
+                    triggerBackgroundSync();
                     $form.remove();
                     var $thankYouMess = $('.hc-form-wrapper #thank-you');
                     $thankYouMess.slideDown(300, function () {

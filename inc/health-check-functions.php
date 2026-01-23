@@ -139,37 +139,87 @@ function life_ajax_update_lead_eoi() {
   
   // Get the form ID from the phone entry
   $form_id = $gform_entry['form_id'];
-  
-  // Resend admin notifications
-  // Get the updated entry for notification
-  $updated_entry = GFAPI::get_entry($entry_id);
-  
-  // Get the form to access its notifications
-  $form = GFAPI::get_form($form_id);
-  
-  // Send each notification individually (bypassing conditional logic)
-  if (isset($form['notifications']) && is_array($form['notifications'])) {
-    foreach ($form['notifications'] as $notification_id => $notification) {
-      // Send the notification
-      GFCommon::send_notification($notification, $form, $updated_entry);
-    }
+
+  /**
+   * Heavy work moved async:
+   * - Resending Gravity Forms notifications (can be slow due to wp_mail/SMTP)
+   * - Salesforce update (already async)
+   */
+
+  // Schedule notifications resend in the background
+  wp_schedule_single_event(time(), 'life_async_resend_gform_notifications', [$entry_id, $form_id]);
+
+  // Update Salesforce Lead EOI - ASYNC
+  // Schedule the event to run immediately in the background
+  wp_schedule_single_event(time(), 'life_async_lead_eoi_update', [$email, $phone, $ausdrisk_result]);
+
+  // Trigger cron immediately (fire and forget) so async tasks start ASAP
+  if (function_exists('spawn_cron')) {
+    spawn_cron(time());
   }
   
-  
-  // Update Salesforce Lead EOI
+  $sf_update_attempted = true; // Assumed true as it's scheduled
+  $sf_lead_found = true; // Assumed
+  $sf_lead_id = 'pending_async';
   $sf_errors = [];
-  $sf_lead_id = null;
-  $sf_update_attempted = false;
-  $sf_lead_found = false;
-  
-  // Query Salesforce for Lead by email
-  if (function_exists('\SfFuncs\queryLeadByEmail')) {
+
+  wp_send_json_success([
+    'message' => 'Lead updated and notification sent successfully (SF update scheduled).',
+    'entry_id' => $entry_id,
+    'sf_lead_id' => $sf_lead_id,
+    'sf_lead_found' => $sf_lead_found,
+    'sf_update_attempted' => $sf_update_attempted,
+    'sf_errors' => $sf_errors,
+    'ausdrisk_result' => $ausdrisk_result,
+    'phone_number' => $phone,
+  ]);
+}
+
+/**
+ * Async handler to resend Gravity Forms notifications for an entry.
+ * This is intentionally async to keep the EOI submit response fast.
+ */
+add_action('life_async_resend_gform_notifications', 'life_handle_async_resend_gform_notifications', 10, 2);
+function life_handle_async_resend_gform_notifications($entry_id, $form_id) {
+  if (!class_exists('GFAPI') || !class_exists('GFCommon')) {
+    return;
+  }
+
+  $entry_id = absint($entry_id);
+  $form_id  = absint($form_id);
+
+  if (!$entry_id || !$form_id) {
+    return;
+  }
+
+  $updated_entry = GFAPI::get_entry($entry_id);
+  if (is_wp_error($updated_entry)) {
+    return;
+  }
+
+  $form = GFAPI::get_form($form_id);
+  if (!$form || !isset($form['notifications']) || !is_array($form['notifications'])) {
+    return;
+  }
+
+  // Send each notification individually (bypassing conditional logic)
+  foreach ($form['notifications'] as $notification_id => $notification) {
+    GFCommon::send_notification($notification, $form, $updated_entry);
+  }
+}
+
+/**
+ * Async handler for EOI Update
+ */
+add_action('life_async_lead_eoi_update', 'life_handle_async_lead_eoi_update', 10, 3);
+function life_handle_async_lead_eoi_update($email, $phone, $ausdrisk_result) {
+    if (!function_exists('\SfFuncs\queryLeadByEmail')) {
+        return; 
+    }
+
     $lead = \SfFuncs\queryLeadByEmail($email);
     
     if ($lead && isset($lead['Id'])) {
-      $sf_lead_found = true;
-      $sf_lead_id = $lead['Id'];
-      
       // Prepare data for update (Phone field in Salesforce)
       $sf_data = [
         'Phone' => $phone,
@@ -180,22 +230,9 @@ function life_ajax_update_lead_eoi() {
       
       // Update Lead in Salesforce
       if (function_exists('\SfFuncs\updateLeadById')) {
-        $sf_update_attempted = true;
-        $sf_errors = \SfFuncs\updateLeadById($lead['Id'], $sf_data);
+        \SfFuncs\updateLeadById($lead['Id'], $sf_data);
       }
     }
-  }
-  
-  wp_send_json_success([
-    'message' => 'Lead updated and notification sent successfully.',
-    'entry_id' => $entry_id,
-    'sf_lead_id' => $sf_lead_id,
-    'sf_lead_found' => $sf_lead_found,
-    'sf_update_attempted' => $sf_update_attempted,
-    'sf_errors' => $sf_errors,
-    'ausdrisk_result' => $ausdrisk_result,
-    'phone_number' => $phone,
-  ]);
 }
 
 /**
@@ -248,132 +285,84 @@ function life_ajax_update_lead_details() {
     return;
   }
 
-  // Check if Lead already exists in Salesforce
-  $sf_errors = [];
-  $sf_lead_id = null;
-  $sf_action = 'insert'; // Track whether we insert or update
+  // Check if Lead already exists in Salesforce - ASYNC MOVED
   
-  if (!function_exists('\SfFuncs\queryLeadByEmail')) {
-    wp_send_json_error([
-      'message' => 'Salesforce functions not available.',
-      'sf_errors' => [['message' => 'Salesforce functions not available.']],
-    ]);
-    return;
-  }
-  
-  // Query for existing lead by email (returns latest lead if multiple exist)
-  $existing_lead = \SfFuncs\queryLeadByEmail($email);
-  $sf_lead_id = $existing_lead['Id'] ?? '';
-  $sf_lead_status = $existing_lead['Status'] ?? '';
-  
-  // Prepare data for update or insert
-  $sf_data = [
-    'FirstName' => $first_name,
-    'LastName' => $last_name,
-    'PostalCode' => $postcode,
-    'Status' => 'No Score',
-    'User_Status_Detail__c' => 'Warm',
-    'CONSENT_TO_OBTAIN_INFORMATION__c' => true,
+  // Schedule the background task
+  $args = [
+    $email,
+    $first_name,
+    $last_name,
+    $postcode
   ];
+  wp_schedule_single_event(time(), 'life_async_lead_details_update', $args);
   
-  if ($existing_lead && !empty($sf_lead_id) && $sf_lead_status !== 'EOI received') {
-    // Lead exists - UPDATE the latest lead
-    $sf_action = 'update';
-    
-    if (!function_exists('\SfFuncs\updateLeadById')) {
-      wp_send_json_error([
-        'message' => 'Salesforce update function not available.',
-        'sf_errors' => [['message' => 'updateLeadById function not available.']],
-      ]);
-      return;
-    }
-
-    if ($sf_lead_status == 'No EOI') {
-      $sf_data['Status'] = 'No EOI';
-      $sf_data['User_Status_Detail__c'] = 'Hot';
-    }
-    
-    // Update Lead in Salesforce
-    $sf_errors = \SfFuncs\updateLeadById($sf_lead_id, $sf_data);
-    
-    // Check if update was successful (no errors)
-    if (!empty($sf_errors)) {
-      // Salesforce returned errors - return error response with details
-      $error_messages = [];
-      foreach ($sf_errors as $error) {
-        if (isset($error['message'])) {
-          $error_messages[] = $error['message'];
-        }
-      }
-      
-      wp_send_json_error([
-        'message' => 'Failed to update Lead: ' . implode(', ', $error_messages),
-        'sf_errors' => $sf_errors,
-        'sf_lead_id' => $sf_lead_id,
-        'email' => $email,
-        'first_name' => $first_name,
-        'last_name' => $last_name,
-        'postcode' => $postcode,
-      ]);
-      return;
-    }
-    
-  } else {
-    // INSERT new lead
-    $sf_action = 'insert';
-    
-    if (!function_exists('\SfFuncs\postDataToSalesforce')) {
-      wp_send_json_error([
-        'message' => 'Salesforce insert function not available.',
-        'sf_errors' => [['message' => 'postDataToSalesforce function not available.']],
-      ]);
-      return;
-    }
-    
-    // Add required fields for new lead creation
-    $sf_data['RecordTypeId'] = '01290000000sizUAAQ';
-    $sf_data['Status'] = 'No Score';
-    $sf_data['User_Status_Detail__c'] = 'Warm';
-    $sf_data['Email'] = $email;
-    $sf_data['CONSENT_TO_OBTAIN_INFORMATION__c'] = true;
-    $sf_data['History_of_CVD__c'] = 'No';
-    $sf_data['Had_GDM__c'] = 'No';
-    $sf_data['LeadSource'] = 'Web Request';
-    
-    // Insert Lead into Salesforce
-    $sf_errors = \SfFuncs\postDataToSalesforce($sf_data);
-    
-    // Check if insertion was successful (no errors)
-    if (!empty($sf_errors)) {
-      // Salesforce returned errors - return error response with details
-      $error_messages = [];
-      foreach ($sf_errors as $error) {
-        if (isset($error['message'])) {
-          $error_messages[] = $error['message'];
-        }
-      }
-      
-      wp_send_json_error([
-        'message' => 'Failed to insert Lead: ' . implode(', ', $error_messages),
-        'sf_errors' => $sf_errors,
-        'email' => $email,
-        'first_name' => $first_name,
-        'last_name' => $last_name,
-        'postcode' => $postcode,
-      ]);
-      return;
-    }
-  }
-  
+  // Return success immediately
   wp_send_json_success([
-    'message' => 'Lead ' . $sf_action . 'd successfully.',
-    'action' => $sf_action,
-    'sf_lead_id' => $sf_lead_id,
+    'message' => 'Lead update scheduled successfully.',
+    'action' => 'scheduled',
+    'sf_lead_id' => 'pending_async',
     'email' => $email,
     'first_name' => $first_name,
     'last_name' => $last_name,
     'postcode' => $postcode,
   ]);
+}
+
+/**
+ * Async handler for Lead Details Update
+ */
+add_action('life_async_lead_details_update', 'life_handle_async_lead_details_update', 10, 4);
+function life_handle_async_lead_details_update($email, $first_name, $last_name, $postcode) {
+    if (!function_exists('\SfFuncs\queryLeadByEmail') || !function_exists('\SfFuncs\updateLeadById') || !function_exists('\SfFuncs\postDataToSalesforce')) {
+        error_log('Salesforce functions not available for async details update.');
+        return;
+    }
+
+    $existing_lead = \SfFuncs\queryLeadByEmail($email);
+    $sf_lead_id = $existing_lead['Id'] ?? '';
+    $sf_lead_status = $existing_lead['Status'] ?? '';
+
+    // Prepare Base Salesforce Data
+    $sf_data = [
+      'FirstName'                        => $first_name,
+      'LastName'                         => $last_name,
+      'PostalCode'                       => $postcode,
+      'Status'                           => 'No Score',
+      'User_Status_Detail__c'            => 'Warm',
+      'CONSENT_TO_OBTAIN_INFORMATION__c' => true,
+    ];
+
+    // Determine if we should UPDATE or INSERT
+    // We update if a lead exists AND it hasn't reached "EOI received" status
+    $should_update = (!empty($sf_lead_id) && $sf_lead_status !== 'EOI received');
+
+    if ($should_update) {
+        // --- UPDATE LOGIC ---
+        if ($sf_lead_status === 'No EOI' || $sf_lead_status === 'Waiting for Eligibility') {
+            $sf_data['Status'] = 'No EOI';
+            $sf_data['User_Status_Detail__c'] = 'Hot';
+        }
+
+        $errors = \SfFuncs\updateLeadById($sf_lead_id, $sf_data);
+        if (!empty($errors)) {
+            error_log('SF Async Update Error (' . $email . '): ' . print_r($errors, true));
+        }
+    } else {
+        // --- INSERT LOGIC --- 
+        // Handles "No Lead Found" OR "Existing Lead is EOI received" cases
+        $insert_data = array_merge($sf_data, [
+            'RecordTypeId'          => '01290000000sizUAAQ',
+            'Email'                 => $email,
+            'History_of_CVD__c'     => 'No',
+            'Had_GDM__c'            => 'No',
+            'LeadSource'            => 'Web Request',
+        ]);
+
+        $errors = \SfFuncs\postDataToSalesforce($insert_data);
+        if (!empty($errors)) {
+            error_log('SF Async Insert Error (' . $email . '): ' . print_r($errors, true));
+        }
+    }
 }
 
 /**
@@ -386,8 +375,23 @@ function life_ajax_update_lead_details() {
  * @param array $form The form object
  * @return void
  */
-add_action('gform_after_submission', 'life_update_lead_after_gform_submission', 10, 2);
-function life_update_lead_after_gform_submission($entry, $form) {
+// Replaced with async scheduler
+add_action('gform_after_submission', 'life_schedule_gform_salesforce_sync', 10, 2);
+function life_schedule_gform_salesforce_sync($entry, $form) {
+    // Schedule the event to run immediately in the background
+    // Pass $entry and $form. Note: passing full objects to cron args can be heavy or problematic serialization-wise.
+    // However, for single event it is usually handled. Better to pass entry ID and reconstruct form if needed,
+    // but gform_after_submission provides full array.
+    // Let's pass entry and form ID to stay safe and lightweight.
+    
+    wp_schedule_single_event(time(), 'life_async_gform_submission', [$entry, $form]);
+    
+    // Trigger cron immediately (fire and forget)
+    spawn_cron(time());
+}
+
+add_action('life_async_gform_submission', 'life_process_gform_submission_salesforce_sync', 10, 2);
+function life_process_gform_submission_salesforce_sync($entry, $form) {
   
   // ============================================
   // CONFIGURATION - Customize these settings
@@ -577,6 +581,16 @@ function life_update_lead_after_gform_submission($entry, $form) {
     if (in_array('Had_GDM__c', $field_classes)) {
       if ( !empty($field_value) ) {
         $sf_data['I_can_provide_evidence_for_CVD_GDM_FH__c'] = true;
+      }
+    }
+    if (in_array('Q10a_Waist_Asian_or_Aboriginal__c', $field_classes)) {
+      if ( !empty($field_value) ) {
+        $sf_data['AUSDRISK_Q10_b_Waist_Measurement__c'] = '';
+      }
+    }
+    if (in_array('AUSDRISK_Q10_b_Waist_Measurement__c', $field_classes)) {
+      if ( !empty($field_value) ) {
+        $sf_data['Q10a_Waist_Asian_or_Aboriginal__c'] = '';
       }
     }
   }

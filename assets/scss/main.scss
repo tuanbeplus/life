@@ -374,6 +374,7 @@ body {
 
     .hc-form-wrapper {
       width: 100%;
+      position: relative;
       .share-wrapper {
         display: none;
         margin-top: 24px;
@@ -412,6 +413,21 @@ body {
         }
       }
     }
+  }
+}
+
+#loading-spinner {
+  display: none;
+  text-align: center;
+  font-size: 1.125rem;
+  position: absolute;
+  width: 100%;
+  top: 0;
+  height: 100%;
+  z-index: 10;
+  background-color: #fff;
+  svg {
+    margin-bottom: 10px;
   }
 }
 

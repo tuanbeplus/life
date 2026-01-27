@@ -31,6 +31,10 @@ function life_enqueue_main() {
     $dv_redirect_url = get_field('diabetes_victoria_redirect_url', 'options') ?: '/living-with-diabetes/';
     $ausdrisk_language = get_field('ausdrisk_language', $post_id);
     $tracking_event_prefix = $events_prefix_arr[$ausdrisk_language] ?? 'English';
+    $eligible_result_acf = get_field('eligible_result', get_the_ID());
+    $eoi_form = $eligible_result_acf ['eoi_form'] ?? '';
+    $submit_button_text = $eoi_form['submit_button_text'] ?? '';
+    $submit_loading_text = $eoi_form['submit_loading_text'] ?? '';
 
     wp_localize_script('life-main-js', 'lifeHealthCheck', array(
       'gravityFormId' => $gravity_form_id,
@@ -38,6 +42,8 @@ function life_enqueue_main() {
       'dvRedirectUrl' => $dv_redirect_url,
       'ausdriskLanguage' => $ausdrisk_language,
       'trackingEventPrefix' => $tracking_event_prefix,
+      'submitButtonText' => $submit_button_text,
+      'submitLoadingText' => $submit_loading_text,
     ));
   }
 }
@@ -138,7 +144,7 @@ function life_ajax_update_lead_eoi() {
   }
   
   // Get the form ID from the phone entry
-  $form_id = $gform_entry['form_id'];
+  $form_id = $gform_entry['form_id'] ?? 0;
 
   /**
    * Heavy work moved async:
@@ -624,16 +630,6 @@ function life_process_gform_submission_salesforce_sync($entry, $form) {
 }
 
 /**
- * Shortcode for AUSDRISK Eligible Result
- * Usage: [hc_ausdrisk_result_eligible]
- */
-// add_shortcode('hc_ausdrisk_result_eligible', 'hc_ausdrisk_result_eligible_shortcode');
-function hc_ausdrisk_result_eligible_shortcode($atts) {
-  ob_start();
-  return ob_get_clean();
-}
-
-/**
  * Convert "true"/"false" string values to Boolean before sending to Salesforce
  * Only applies to checkbox, radio, text, and select field types
  * 
@@ -669,3 +665,109 @@ function life_convert_gform_entry_booleans($field_value, $form, $entry, $field_i
   return $field_value;
 }
 add_filter('gform_salesforce_field_value', 'life_convert_gform_entry_booleans', 10, 5); 
+
+/**
+ * Shortcode for AUSDRISK Eligible Result
+ * Usage: [hc_ausdrisk_result_eligible]
+ */
+add_shortcode('hc_ausdrisk_result_eligible', 'hc_ausdrisk_result_eligible_shortcode');
+function hc_ausdrisk_result_eligible_shortcode($atts) {
+  ob_start();
+  $eligible_result_acf = get_field('eligible_result', get_the_ID());
+  $content_before_eoi = $eligible_result_acf['content_before_eoi_form'] ?? '';
+  $eoi_form = $eligible_result_acf ['eoi_form'] ?? '';
+  $phone_placeholder = $eoi_form['phone_placeholder'] ?? '';
+  $phone_validation = $eoi_form['phone_validation'] ?? '';
+  $submit_button_text = $eoi_form['submit_button_text'] ?? '';
+  $submit_loading_text = $eoi_form['submit_loading_text'] ?? '';
+  $content_after_eoi = $eligible_result_acf ['content_after_eoi_form'] ?? '';
+  ?>
+  
+  <?php echo wpautop($content_before_eoi); ?>
+  <form class="final-step-form">
+    <div class="field">
+        <label for="phone-number"><?php echo $phone_placeholder; ?></label>
+        <input id="phone-number" name="phone_number" type="tel" placeholder="<?php echo $phone_placeholder; ?>">
+    </div>
+    <div class="input-container">
+        <input id="btn-submit-eoi" type="submit" value="<?php echo $submit_button_text; ?>">
+    </div>
+    <div class="validate-mess"><?php echo $phone_validation; ?></div>
+  </form>
+  <hr>
+  <?php echo wpautop($content_after_eoi); ?>
+  <?php
+  return ob_get_clean();
+}
+
+/**
+ * Shortcode for AUSDRISK Ineligible Result
+ * Usage: [hc_ausdrisk_result_ineligible]
+ */
+add_shortcode('hc_ausdrisk_result_ineligible', 'hc_ausdrisk_result_ineligible_shortcode');
+function hc_ausdrisk_result_ineligible_shortcode($atts) {
+  ob_start();
+  $ineligible_result_acf = get_field('ineligible_result', get_the_ID());
+  echo wpautop($ineligible_result_acf);
+  return ob_get_clean();
+}
+
+/**
+ * Get the ID of a GForm field by its CSS class
+ *
+ * @param int    $form_id     The ID of the form
+ * @param string $css_class   The CSS class of the field
+ *
+ * @return int|null The ID of the field, or null if not found
+ */
+function hc_get_gform_field_id_by_css_class($form_id, $css_class) {
+  $form = GFAPI::get_form($form_id);
+  if (!$form) return null;
+
+  foreach ($form['fields'] as $field) {
+    if (!empty($field->cssClass) && strpos($field->cssClass, $css_class) !== false) {
+      return $field->id;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Get the latest entry for a specific email address in a GForm
+ *
+ * @param int    $form_id     The ID of the form
+ * @param string $email       The email address to search for
+ * @param string $email_field_class The CSS class of the email field
+ *
+ * @return array|null The latest entry for the email address, or null if not found
+ */
+function hc_get_latest_gform_entry_by_email($form_id, $email, $email_field_class) {
+
+  $email_field_id = hc_get_gform_field_id_by_css_class($form_id, $email_field_class);
+  if (!$email_field_id) return null;
+
+  $search_criteria = [
+    'status' => 'active',
+    'field_filters' => [
+      [
+        'key'   => (string) $email_field_id,
+        'value' => $email
+      ]
+    ]
+  ];
+
+  $sorting = [
+    'key'       => 'date_created',
+    'direction' => 'DESC'
+  ];
+
+  $paging = [
+    'offset'    => 0,
+    'page_size' => 1
+  ];
+
+  $entries = GFAPI::get_entries($form_id, $search_criteria, $sorting, $paging);
+
+  return !empty($entries) ? $entries[0] : null;
+}

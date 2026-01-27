@@ -8,6 +8,9 @@ jQuery(function ($) {
     const caldLanguages = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.caldLanguages) ? lifeHealthCheck.caldLanguages : {};
     const dvRedirectUrl = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.dvRedirectUrl) ? lifeHealthCheck.dvRedirectUrl : "/living-with-diabetes/";
     const trackingEventPrefix = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.trackingEventPrefix) ? lifeHealthCheck.trackingEventPrefix : "English";
+    const submitLoadingText = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.submitLoadingText) ? lifeHealthCheck.submitLoadingText : "Submitting...";
+    const submitButtonText = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.submitButtonText) ? lifeHealthCheck.submitButtonText : "Take the next step";
+    const preLeadData = JSON.parse($('#pre_lead_data').val()) || {};
     const hcMainSection = $('body.life-health-check .health-check-section');
     const hcFormSidebar = hcMainSection.find('.sidebar');
     const hcFormWrapper = hcMainSection.find('.hc-form-wrapper');
@@ -18,6 +21,13 @@ jQuery(function ($) {
     const introNextButton = introPage.find('.gform_next_button');
     const detailsNextButton = detailsPage.find('.gform_next_button');
     const hcSubmitButton = hcForm.find('.gform_button[type="submit"]');
+
+    const livingWithDiabetesField = introPage.find('.gfield.living_with_diabetes');
+    const postCodeField = introPage.find('.gfield.postcode');
+    const firstNameField = detailsPage.find('.gfield.first_name');
+    const lastNameField = detailsPage.find('.gfield.last_name');
+    const emailField = detailsPage.find('.gfield.email');
+    const confirmContactField = detailsPage.find('.gfield.confirm_contact');
 
     // Helper function to get CALD text with fallback
     function getCaldText(key, defaultValue) {
@@ -94,12 +104,12 @@ jQuery(function ($) {
                 return false;
             }
 
-            // On questions page, allow default behavior only if on submit button or last field
+            // On questions page, allow default behavior only if on submit/next button or last field
             // Otherwise prevent to avoid accidental submission
             if ($currentPage.hasClass('questions')) {
                 const $target = $(e.target);
-                // Only allow if it's the submit button itself
-                if (!$target.is('input[type="submit"]')) {
+                // Only allow if it's a submit/next button (specifically exclude Previous button from Enter trigger)
+                if (!$target.is('input[type="submit"]') || $target.hasClass('gform_previous_button')) {
                     e.preventDefault();
                     return false;
                 }
@@ -412,13 +422,12 @@ jQuery(function ($) {
 
     function updateSidebarProgressSteps() {
         // PERF: Scope DOM queries to the Health Check form only (avoid scanning other GF instances).
-        const $gformWrapper = $(`#gform_wrapper_${lhcFormId}`);
-        const gformSteps = $gformWrapper.find(`.gf_page_steps .gf_step`);
+        const gformSteps = hcFormWrapper.find(`.gf_page_steps .gf_step`);
 
         // Check if we're on confirmation page
-        const confirmationPage = $gformWrapper.find('.gform_confirmation_wrapper').length > 0 ||
-            $gformWrapper.find('.gform_confirmation_message').length > 0 ||
-            $gformWrapper.hasClass('gform_confirmation');
+        const confirmationPage = hcFormWrapper.find('.gform_confirmation_wrapper').length > 0 ||
+            hcFormWrapper.find('.gform_confirmation_message').length > 0 ||
+            hcFormWrapper.hasClass('gform_confirmation');
 
         // Mapping: sidebar steps to Gravity Forms steps
         const stepMapping = {
@@ -614,23 +623,32 @@ jQuery(function ($) {
     // Update on Gravity Forms AJAX events
     $(document).on('gform_confirmation_loaded', function () {
         if ($('body').hasClass('life-health-check')) {
+
             updateRadioButtonLabels();
             updateSidebarProgressSteps();
             $(`form.${lhcFormClass}`).removeClass('loading');
             $(`header.top-nav`).addClass('hidden');
             $('.sidebar .get-started-section .desc').hide();
             $('.health-check-section .sidebar').addClass('mobile-hidden');
+
+            const ausdriskScore = $('input#input-ausdrisk-score').val().trim();
+            const ausdriskResult = $('input#ausdrisk-tracking-result').val().trim();
+
             // Animate scroll to the form, offset 220px, smooth
-            let $formWrapper = $(`.life-health-check .hc-form-wrapper`);
-            if ($formWrapper.length) {
-                smoothScrollTo(Math.max($formWrapper.offset().top - 220, 0), 300);
+            if (hcFormWrapper.length) {
+                if (ausdriskScore) {
+                    let confirmationMessage = hcFormWrapper.find('.gform_confirmation_message');
+                    if (confirmationMessage.length) {
+                        let html = confirmationMessage.html();
+                        confirmationMessage.html(html.replace('[ausdrisk_score]', ausdriskScore));
+                    }
+                }
+                smoothScrollTo(Math.max(hcFormWrapper.offset().top - 220, 0), 300);
             }
 
-            if ($('input#ausdrisk-tracking-result').val().trim() === 'ineligible') {
+            if (ausdriskResult && ausdriskResult === 'ineligible') {
                 $('.hc-form-wrapper .share-wrapper').show();
             }
-
-            const ausdriskResult = $('input#ausdrisk-tracking-result').val().trim();
 
             trackEvent(`${trackingEventPrefix}_Results`, {
                 form_id: lhcFormId,
@@ -660,7 +678,7 @@ jQuery(function ($) {
     });
 
     // Update on any AJAX form submission
-    $(document).on('gform_post_render', function () {
+    $(document).on('gform_post_render', function (event, form_id, current_page) {
         if ($('body').hasClass('life-health-check')) {
             updateRadioButtonLabels();
             updateSidebarProgressSteps();
@@ -681,6 +699,74 @@ jQuery(function ($) {
             $(`form.${lhcFormClass} .gform_page.questions .gform_next_button`)
                 .attr('id', 'btn-check-score-hc');
         }
+
+        if (preLeadData && preLeadData.Status === 'No Score') {
+
+            smoothScrollTo(Math.max(hcFormWrapper.offset().top - 220, 0), 300);
+
+            const wrapper = document.getElementById(`gform_wrapper_${lhcFormId}`);
+            if (!wrapper) return;
+
+            // Show spinner immediately
+            hcFormWrapper.find('#loading-spinner').show();
+
+            // Field pre-filling as a fallback
+            livingWithDiabetesField.find('input[type="radio"][value="No"]').prop('checked', true);
+            postCodeField.find('input[type="number"]').val(0).val(preLeadData.PostalCode).focus().blur();
+            confirmContactField.find('input[type="checkbox"]').prop('checked', true);
+            firstNameField.find('input[type="text"]').val(preLeadData.FirstName).focus().blur();
+            lastNameField.find('input[type="text"]').val(preLeadData.LastName).focus().blur();
+            emailField.find('input[type="email"]').val(preLeadData.Email).focus().blur();
+
+            if (current_page >= 3) {
+                wrapper.classList.add('auto-paging');
+                hcFormWrapper.find('#loading-spinner').remove();
+                return;
+            }
+
+            if (wrapper.dataset.autoPaging === '1' || wrapper.classList.contains('auto-paging')) return;
+
+            const formEl = wrapper.querySelector('form');
+            if (!formEl) return;
+
+            wrapper.dataset.autoPaging = '1';
+
+            // Wait for GF to bind internal events before clicking next
+            setTimeout(() => {
+                const sourceInput = formEl.querySelector(`input[name="gform_source_page_number_${lhcFormId}"]`);
+                const targetInput = formEl.querySelector(`input[name="gform_target_page_number_${lhcFormId}"]`);
+                const nextBtn = $(formEl).find('.gform_next_button:visible').get(0) || formEl.querySelector('.gform_next_button');
+
+                if (sourceInput && targetInput && nextBtn) {
+                    sourceInput.value = current_page;
+                    targetInput.value = parseInt(current_page) + 1;
+                    nextBtn.click();
+                }
+
+                // Clean URL: remove everything after # and the # itself
+                if (window.location.hash) {
+                    history.replaceState(null, null, window.location.href.split('#')[0]);
+                }
+
+                wrapper.dataset.autoPaging = '0';
+
+            }, 150);
+        }
+        else if (preLeadData && preLeadData.Status === 'No EOI') {
+            let heading = hcMainSection.find('.sidebar .heading');
+            heading.text(getCaldText('main_heading.results', 'Results'));
+            hcMainSection.find('.gform_wrapper').remove();
+            hcMainSection.find('.sidebar').addClass('mobile-hidden');
+            hcMainSection.find('.sidebar .languages').hide();
+
+            hcMainSection.find('.sidebar .progress-steps .progress-step').each(function () {
+                const $step = $(this);
+                $step.addClass('completed');
+            });
+
+            smoothScrollTo(Math.max(hcFormWrapper.offset().top - 220, 0), 300);
+        }
+
     });
 
     // Update when form is loaded via AJAX
@@ -773,6 +859,9 @@ jQuery(function ($) {
     });
 
     $(document).on('click', `form.${lhcFormClass} .gform_page.questions input[type=submit]`, function () {
+        if ($(this).hasClass('gform_previous_button')) {
+            return;
+        }
         trackEvent(`${trackingEventPrefix}_Check_Score`, {
             form_id: lhcFormId,
             language: trackingEventPrefix,
@@ -780,6 +869,11 @@ jQuery(function ($) {
         });
         // Add hash to URL
         window.location.hash = 'check-score';
+    });
+
+    $(document).on('click', `form.${lhcFormClass} .gform_page.questions .gform_previous_button__custom`, function () {
+        detailsPage.show();
+        questionsPage.hide();
     });
 
     let postcodeTimer = null;
@@ -1181,11 +1275,11 @@ jQuery(function ($) {
         }
 
         // Get email, entry ID, and phone field ID from hidden fields
-        const email = $form.find('#input-ausdrisk-user-email').val();
-        const entryId = $form.find('#input-ausdrisk-entry-id').val();
-        const phoneFieldId = $form.find('#input-ausdrisk-phone-gfield-id').val();
-        const resultFieldId = $form.find('#input-ausdrisk-result-gfield-id').val();
-        const ausdriskResult = $form.find('#input-ausdrisk-result').val();
+        const email = hcFormWrapper.find('#input-ausdrisk-user-email').val();
+        const entryId = hcFormWrapper.find('#input-ausdrisk-entry-id').val();
+        const phoneFieldId = hcFormWrapper.find('#input-ausdrisk-phone-gfield-id').val();
+        const resultFieldId = hcFormWrapper.find('#input-ausdrisk-result-gfield-id').val();
+        const ausdriskResult = hcFormWrapper.find('#input-ausdrisk-result').val();
 
         if (!email) {
             $validateMess.text('Email not found. Please contact support.').show();
@@ -1207,7 +1301,7 @@ jQuery(function ($) {
         // Disable submit button
         const $submitBtn = $form.find('#btn-submit-eoi');
         $phoneInput.prop('disabled', true);
-        $submitBtn.prop('disabled', true).addClass('loading').val('Submitting...');
+        $submitBtn.prop('disabled', true).addClass('loading').val(submitLoadingText);
 
         trackEvent(`${trackingEventPrefix}_Submit_EOI`, {
             form_id: lhcFormId,
@@ -1236,11 +1330,11 @@ jQuery(function ($) {
                     // Trigger background sync immediately
                     triggerBackgroundSync();
                     $form.remove();
-                    var $thankYouMess = $('.hc-form-wrapper #thank-you');
+                    let $thankYouMess = $('.hc-form-wrapper #thank-you');
                     $thankYouMess.slideDown(300, function () {
                         if ($thankYouMess.length) {
-                            var containerOffset = $thankYouMess.offset().top;
-                            var scrollTo = containerOffset - 100; // 100px offset from top
+                            let containerOffset = $thankYouMess.offset().top;
+                            let scrollTo = containerOffset - 100; // 100px offset from top
                             smoothScrollTo(Math.max(scrollTo, 0), 300);
 
                             trackEvent(`${trackingEventPrefix}_Thankyou`, {
@@ -1255,13 +1349,13 @@ jQuery(function ($) {
                     $('.hc-form-wrapper .share-wrapper').show();
                 } else {
                     $validateMess.text(response.data && response.data.message ? response.data.message : 'An error occurred. Please try again.').show();
-                    $submitBtn.prop('disabled', false).removeClass('loading').val('Take The Next Step');
+                    $submitBtn.prop('disabled', false).removeClass('loading').val(submitButtonText);
                     $phoneInput.prop('disabled', false);
                 }
             },
             error: function (xhr, status, error) {
                 $validateMess.text('An error occurred. Please try again.').show();
-                $submitBtn.prop('disabled', false).removeClass('loading').val('Take The Next Step');
+                $submitBtn.prop('disabled', false).removeClass('loading').val(submitButtonText);
                 $phoneInput.prop('disabled', false);
             }
         });

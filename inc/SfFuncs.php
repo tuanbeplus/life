@@ -156,9 +156,56 @@ function queryLeadByEmail($email) {
             }
         }
     }
-    
     return false;
 }
+
+/**
+ * Get Lead by ID
+ *
+ * @param string $leadId
+ * @return array|false Returns the Lead record with Id on success, false on failure
+ */
+function getLeadById($leadId) {
+    if (empty($leadId)) {
+        return false;
+    }
+
+    $curlHandleForToken = curl_init();
+    $response = getSalesforceAccessToken($curlHandleForToken);
+    $responseStatus = curl_getinfo($curlHandleForToken, CURLINFO_HTTP_CODE);
+    
+    if ($responseStatus == 200) {
+        $auth = json_decode($response);
+        $ch = curl_init();
+        
+        $url = $auth->instance_url . '/services/data/v52.0/sobjects/Lead/' . $leadId;
+        
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt(
+            $ch,
+            CURLOPT_HTTPHEADER,
+            [
+                'Authorization: Bearer ' . $auth->access_token,
+                'Content-Type: application/json',
+            ]
+        );
+        
+        $result = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpCode == 200) {
+            return json_decode($result, true);
+        }
+    }
+    return false;
+}
+
+// echo '<pre>';
+// print_r(getLeadById('00QOZ00000LtKI92AN'));
+// echo '</pre>';
+
 
 /**
  * Update Salesforce Lead by ID

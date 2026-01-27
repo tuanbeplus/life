@@ -14,6 +14,7 @@ $share_url = get_permalink();
 // Get CALD languages and gravity form ID
 $cald_languages = get_field('cald_languages', get_the_ID());
 $gravity_form_id = get_field('gravity_form_id', get_the_ID()) ?: 2;
+$pre_lead_data = \SfFuncs\getLeadById($_GET['lead_id'] ?? '') ?? [];
 
 // Helper function to get CALD text with fallback
 function get_cald_text($key, $default = '') {
@@ -48,16 +49,21 @@ function get_cald_text($key, $default = '') {
                         <p class="field-label mobile"><?php echo get_cald_text('choose_language', 'Choose language'); ?></p>
                         <ul class="language-list field-list">
                         <?php 
-                        $current_url = $_SERVER['REQUEST_URI'];
+                        $current_path_clean = rtrim(strtok($_SERVER['REQUEST_URI'], '?'), '/');
                         foreach ($languages as $index => $item): 
-                            $item_url = esc_url($item['url'] ?? '#');
-                            $is_current = ($current_url === $item_url || ($item_url === '#' && $index === 0));
+                            $item_url = $item['url'] ?? '#';
+                            $item_path = ($item_url !== '#') ? wp_make_link_relative($item_url) : '#';
+                            
+                            // Remove trailing slashes and query strings for consistent comparison
+                            $item_path_clean = rtrim(strtok($item_path, '?'), '/');
+
+                            $is_current = ($current_path_clean === $item_path_clean || ($item_url === '#' && $index === 0));
                         ?>
                             <li class="language-item">
-                                <a href="<?php echo $item_url; ?>" 
+                                <a href="<?php echo esc_url($item_url); ?>" 
                                    class="language-link <?php echo $is_current ? 'active' : ''; ?>"
                                    <?php echo $is_current ? 'aria-current="page"' : ''; ?>>
-                                    <?php echo $item['text'] ?? ''; ?>
+                                    <?php echo esc_html($item['text'] ?? ''); ?>
                                 </a>
                             </li>
                         <?php endforeach; ?>
@@ -91,8 +97,37 @@ function get_cald_text($key, $default = '') {
             <div class="hc-form-wrapper">
                 <div class="non_vic_postcodes-block" style="display:none;">
                     <input id="non_vic_postcodes_json" type="hidden" value="<?php echo esc_attr( $non_vic_postcodes ); ?>">
+                    <input id="pre_lead_data" type="hidden" value="<?php echo esc_attr( json_encode($pre_lead_data) ); ?>">
+                </div>
+                <div id="loading-spinner">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24">
+                        <path d="M12 2a10 10 0 1 1-10 10" fill="none" stroke="#8dc63f" stroke-width="3" stroke-linecap="round">
+                            <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="0.8s" repeatCount="indefinite" />
+                        </path>
+                    </svg>
+                    <p>Loading Pre-submission data...</p>
                 </div>
                 <?php echo do_shortcode( '[gravityform id="' . esc_attr($gravity_form_id) . '" title="false" description="false" ajax="true"]' ); ?>
+                <?php if(!empty($pre_lead_data) && $pre_lead_data['Status'] == 'No EOI') : ?>
+                    <div data-form-theme="gravity-theme" class="gform_confirmation_wrapper gravity-theme gform-theme--no-framework life-health-check-form">
+                        <div class="gform_confirmation_message gform_confirmation_message">
+                            <?php 
+                                $lead_email = $pre_lead_data['Email'] ?? '';
+                                $lead_score = $pre_lead_data['AUSDRISK_Score__c'] ?? '';
+                                $latest_entry = hc_get_latest_gform_entry_by_email($gravity_form_id, $lead_email, 'email');
+                                $eligible_content = do_shortcode('[hc_ausdrisk_result_eligible]'); 
+                                echo str_replace('[ausdrisk_score]', $lead_score, $eligible_content);
+                            ?>
+                            <input id="ausdrisk-tracking-result" type="hidden" value="eligible" />
+                            <input id="input-ausdrisk-score" type="hidden" value="<?php echo $lead_score; ?>">
+                            <input id="input-ausdrisk-user-email" type="hidden" value="<?php echo $lead_email; ?>">
+                            <input id="input-ausdrisk-phone-gfield-id" type="hidden" value="<?php echo hc_get_gform_field_id_by_css_class($gravity_form_id, 'phone'); ?>">
+                            <input id="input-ausdrisk-result-gfield-id" type="hidden" value="<?php echo hc_get_gform_field_id_by_css_class($gravity_form_id, 'AUSDRISK_Results_Eligible'); ?>">
+                            <input id="input-ausdrisk-result" type="hidden" value="EOI received">
+                            <input id="input-ausdrisk-entry-id" type="hidden" value="<?php echo $latest_entry['id'] ?? 0; ?>">
+                        </div>
+                    </div>
+                <?php endif; ?>
                 <div id="thank-you" style="display: none;">
                     <div class="thank-you-message">
                         <hr />
@@ -100,12 +135,6 @@ function get_cald_text($key, $default = '') {
                         $thank_you_message = get_field('thank_you_message', get_the_ID());
                         if (!empty($thank_you_message)) {
                             echo wpautop($thank_you_message);
-                        } else {
-                            echo '<h2>Congratulations - your health journey starts here!</h2>';
-                            echo '<p>Thank you for submitting your details. You can expect a call from us within the <strong>next 24-48 hours.</strong></p>';
-                            echo '<p>While you wait, head on over to our <strong>Health Hub</strong> for tips, recipes and advice to help you start making small, healthy changes today.</p>';
-                            echo '<a class="cta-btn" href="/health-hub/" target="_blank">Visit the health hub</a>';
-                            echo '<h3><strong>Know someone who might benefit from the <em>Life!</em> program?</strong></h3>';
                         }
                         ?>
                     </div>

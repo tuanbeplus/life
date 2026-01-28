@@ -40,12 +40,8 @@ function get_cald_text($key, $default = '') {
             <div class="sidebar">
                 <!-- Get Started Section -->
                 <div class="get-started-section">
-                    <h2 class="heading"><?php echo get_cald_text('main_heading.get_started', 'Get started'); ?></h2>
-                    <?php if (!empty($description)): ?>
-                        <p class="desc"><?php echo get_cald_text('description', $description); ?></p>
-                    <?php endif; ?>
                     <div class="languages field">
-                        <p class="field-label"><?php echo get_cald_text('choose_language', 'Choose language'); ?></p>
+                        <h3 class="field-label"><?php echo get_cald_text('choose_language', 'Choose language'); ?></h3>
                         <p class="field-label mobile"><?php echo get_cald_text('choose_language', 'Choose language'); ?></p>
                         <ul class="language-list field-list">
                         <?php 
@@ -72,6 +68,7 @@ function get_cald_text($key, $default = '') {
                 </div>
                 <!-- Progress Checklist Section -->
                 <div class="progress-checklist field">
+                    <h3 class="field-label"><?php echo get_cald_text('progress_heading', 'Progress'); ?></h3>
                     <p class="field-label mobile"><?php echo get_cald_text('progress_heading', 'Progress'); ?></p>
                     <ul class="progress-steps field-list">
                         <li class="progress-step intro">
@@ -89,10 +86,10 @@ function get_cald_text($key, $default = '') {
                     </ul>
                 </div>
                 <!-- Contact Information Section -->
-                <div class="get-in-touch field">
-                    <p class="contact-text"><?php echo get_cald_text('contact_copy', 'Need help? Call our friendly team on'); ?></p>
+                <!-- <div class="get-in-touch field">
+                    <p class="contact-text"><?php //echo get_cald_text('contact_copy', 'Need help? Call our friendly team on'); ?></p>
                     <a href="tel:137475" class="phone-number"><span class="phone-digits risk-13-wcag">13 74 75</span></a>
-                </div>
+                </div> -->
             </div>
             <div class="hc-form-wrapper">
                 <div class="non_vic_postcodes-block" style="display:none;">

@@ -455,6 +455,7 @@ jQuery(function ($) {
         // Update heading text based on form state
         if (confirmationPage) {
             heading.text(getCaldText('main_heading.results', 'Results'));
+            $('.sidebar .progress-checklist .field-label').text(getCaldText('main_heading.results', 'Results'));
             $('.sidebar .languages').hide();
         } else {
             // Check if intro step is completed
@@ -479,7 +480,12 @@ jQuery(function ($) {
 
             // If we're on confirmation page, mark all steps as completed
             if (confirmationPage) {
-                $step.addClass('completed');
+                if ($step.hasClass('results')) {
+                    $step.addClass('active completed');
+                }
+                else {
+                    $step.removeClass('active');
+                }
                 return; // Skip the rest of the logic
             }
 
@@ -1743,7 +1749,7 @@ jQuery(function ($) {
                 return;
             }
 
-            if (currWidth > 767) {
+            if (currWidth > 1024) {
                 // Remove .active from all .sidebar .field
                 $('.sidebar .field.active').removeClass('active');
 

@@ -436,38 +436,23 @@ jQuery(function ($) {
             'questions': [3, 4, 5]  // Steps 3, 4, 5 (all questions)
         };
 
-        const heading = $('.sidebar .heading');
-
-        if ($(`#gf_step_${lhcFormId}_1`).hasClass('gf_step_completed')) {
-            $('.sidebar .languages').hide();
+        if (hcFormWrapper.find(`#gf_step_${lhcFormId}_1`).hasClass('gf_step_completed')) {
+            hcFormSidebar.find('.languages').hide();
+            hcFormSidebar.find('.get-in-touch').hide();
         }
         else {
-            $('.sidebar .languages').show();
+            hcFormSidebar.find('.languages').show();
+            hcFormSidebar.find('.get-in-touch').show();
         }
 
-        if ($(`#gf_step_${lhcFormId}_1`).hasClass('gf_step_completed') && $(window).width() < 768) {
-            $('.sidebar .get-started-section .heading').hide();
-        }
-        else {
-            $('.sidebar .get-started-section .heading').show();
-        }
-
-        // Update heading text based on form state
+        // Update based on form state
         if (confirmationPage) {
-            heading.text(getCaldText('main_heading.results', 'Results'));
-            $('.sidebar .progress-checklist .field-label').text(getCaldText('main_heading.results', 'Results'));
-            $('.sidebar .languages').hide();
-        } else {
-            // Check if intro step is completed
-            const introStep = $(`#gf_step_${lhcFormId}_1`);
-            if (introStep.length && introStep.hasClass('gf_step_completed')) {
-                heading.text(getCaldText('main_heading.progress', 'Progress'));
-            } else {
-                heading.text(getCaldText('main_heading.get_started', 'Get started'));
-            }
+            hcFormSidebar.find('.progress-checklist .field-label').text(getCaldText('main_heading.results', 'Results'));
+            hcFormSidebar.find('.languages').hide();
+            hcFormSidebar.find('.get-in-touch').show();
         }
 
-        $('.life-health-check .sidebar .progress-steps .progress-step').each(function () {
+        hcFormSidebar.find('.progress-steps .progress-step').each(function () {
             const $step = $(this);
             const stepType = $step.attr('class').match(/progress-step\s+(\w+)/);
 

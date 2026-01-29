@@ -86,10 +86,10 @@ function get_cald_text($key, $default = '') {
                     </ul>
                 </div>
                 <!-- Contact Information Section -->
-                <!-- <div class="get-in-touch field">
-                    <p class="contact-text"><?php //echo get_cald_text('contact_copy', 'Need help? Call our friendly team on'); ?></p>
+                <div class="get-in-touch field">
+                    <p class="contact-text"><?php echo get_cald_text('contact_copy', 'Need help? Call our friendly team on'); ?></p>
                     <a href="tel:137475" class="phone-number"><span class="phone-digits risk-13-wcag">13 74 75</span></a>
-                </div> -->
+                </div>
             </div>
             <div class="hc-form-wrapper">
                 <div class="non_vic_postcodes-block" style="display:none;">

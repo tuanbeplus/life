@@ -125,6 +125,7 @@ body {
           display: none;
           @media (max-width: 1123px) {
             display: block;
+            padding-bottom: 10px;
           }
         }
       }
@@ -350,8 +351,8 @@ body {
 
       // Contact Information Section
       .get-in-touch {
-        @media (max-width: 767px) {
-          display: none;
+        @media (max-width: 1123px) {
+          display: none !important;
         }
         .contact-text {
           font-size: 14px;

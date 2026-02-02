@@ -54,19 +54,6 @@ jQuery(function ($) {
         return div.innerHTML;
     }
 
-    // Helper function to trigger WP Cron immediately (non-blocking)
-    function triggerBackgroundSync() {
-        try {
-            // Fire and forget request to wp-cron.php
-            const cronUrl = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.siteUrl) ?
-                lifeHealthCheck.siteUrl + '/wp-cron.php?doing_wp_cron' : '/wp-cron.php?doing_wp_cron';
-
-            fetch(cronUrl, { mode: 'no-cors' }).catch(() => { });
-        } catch (e) {
-            // Ignore errors
-        }
-    }
-
     // Helper function for responsive smooth scrolling
     // Uses native window.scrollTo on mobile (<767px) for better performance
     // Uses jQuery animate on desktop (>=767px) for smoother control and slower speed
@@ -587,6 +574,65 @@ jQuery(function ($) {
         }
     }
 
+    // Q12 Mutual Exclusivity Logic
+    function handleQ12Interactions() {
+        const $q12 = $(`form.${lhcFormClass} .gfield.q12`);
+        if (!$q12.length) return;
+
+        // "None" option value - verified assumption or allow for partial match if needed
+        const noneValue = 'none';
+
+        $q12.find('input[type="checkbox"]').on('change', function () {
+            const $this = $(this);
+            const val = ($this.val() || '').toLowerCase();
+            const isNone = val === noneValue;
+
+            if ($this.is(':checked')) {
+                if (isNone) {
+                    // If "None" is checked, uncheck everything else
+                    $q12.find('input[type="checkbox"]').not($this).prop('checked', false);
+                } else {
+                    // If any other option is checked, uncheck "None"
+                    $q12.find(`input[type="checkbox"][value="${noneValue}"]`).prop('checked', false); // case insensitive check
+                    // Also try finding by label text if value check fails? 
+                    // Usually value is reliable, but let's stick to value for now. 
+                    // NOTE: User said "value 'None'", so we assume "None" or "none".
+                    $q12.find('input[type="checkbox"]').filter(function () {
+                        return $(this).val().toLowerCase() === noneValue;
+                    }).prop('checked', false);
+                }
+            }
+            validateQ12()
+        });
+    }
+
+    // Q12 Validation Logic
+    function validateQ12() {
+        const $q12 = $(`form.${lhcFormClass} .gfield.q12`);
+        // Only validate if q12 is visible and exists
+        if (!$q12.length || !$q12.is(':visible')) return true;
+
+        const isChecked = $q12.find('input[type="checkbox"]:checked').length > 0;
+        const $nextButton = $q12.closest('.gform_page').find('.gform_next_button, input[type="submit"]');
+        const validationText = getCaldText('form_validation_message.validation_questions', 'Please select an option.');
+
+        if (!isChecked) {
+            // Add error class/message if needed for visual feedback
+            $q12.addClass('gfield_error');
+            if ($q12.find('.validation_message').length === 0) {
+                $q12.append('<div class="validation_message">' + validationText + '</div>');
+            }
+            // Disable next button?
+            $nextButton.prop('disabled', true);
+            return false;
+        } else {
+            $q12.removeClass('gfield_error');
+            $q12.find('.validation_message').remove();
+            $nextButton.prop('disabled', false);
+            return true;
+        }
+    }
+
     // Auto-trigger debug function when select, radio, or checkbox fields change
     $(document).on('change', `form.${lhcFormClass} select, form.${lhcFormClass} input[type="radio"], form.${lhcFormClass} input[type="checkbox"]`, function () {
         const $changedField = $(this).closest('.gfield');
@@ -1098,24 +1144,9 @@ jQuery(function ($) {
         let $changed = $(this);
         let currentPage = $changed.closest('.gform_page');
         let parentField = $changed.closest('.gfield');
-        let $checkboxes = parentField.find('input[type=checkbox]');
 
         if (parentField.hasClass('q12')) {
-            // Find the "None of the below" checkbox (case-insensitive)
-            let $noneCheckbox = $checkboxes.filter(function () {
-                return $.trim($(this).val()).toLowerCase() === 'none';
-            });
-            if ($changed.is($noneCheckbox)) {
-                // If "None of the below" is checked, uncheck all others
-                $checkboxes.not($noneCheckbox).each(function () {
-                    if ($(this).prop('checked')) {
-                        $(this).prop('checked', false); // Don't trigger change to prevent recursion
-                    }
-                });
-            } else {
-                // If any box other than "None of the below" is checked, uncheck "None of the below"
-                $noneCheckbox.prop('checked', false);
-            }
+            handleQ12Interactions();
         }
 
         if (parentField.hasClass('confirm_contact')) {
@@ -1205,8 +1236,6 @@ jQuery(function ($) {
             success: function (response) {
                 if (response.success) {
                     // console.log('Lead inserted/updated successfully:', response);
-                    // Trigger background sync immediately
-                    triggerBackgroundSync();
                 } else {
                     // Salesforce validation error or other error
                     console.error('Lead insertion failed:', response);
@@ -1318,8 +1347,6 @@ jQuery(function ($) {
             },
             success: function (response) {
                 if (response.success) {
-                    // Trigger background sync immediately
-                    triggerBackgroundSync();
                     $form.remove();
                     let $thankYouMess = $('.hc-form-wrapper #thank-you');
                     $thankYouMess.slideDown(300, function () {
@@ -1522,6 +1549,22 @@ jQuery(function ($) {
             });
 
             $(document).on('gform_page_loaded', () => {
+                setTimeout(() => {
+                    this.setupProgressiveReveal();
+                    this.restoreFieldStates();
+                    this.updatePageFooterState();
+                }, 150);
+            });
+
+            // Listen for conditional logic changes (e.g., q12 appearing)
+            $(document).on('gform_post_conditional_logic', (event, formId, fields, isInit) => {
+                // Skip initialization phase as init() handles it
+                if (isInit) return;
+
+                let hcFormId = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.gravityFormId) ? lifeHealthCheck.gravityFormId : 2;
+                // Check if the event is for our form
+                if (parseInt(formId) !== parseInt(hcFormId)) return;
+
                 setTimeout(() => {
                     this.setupProgressiveReveal();
                     this.restoreFieldStates();

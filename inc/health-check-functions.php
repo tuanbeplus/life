@@ -5,7 +5,7 @@
 
 function life_enqueue_main() {
   $theme_dir = get_template_directory_uri();
-  $theme_ver = '2.0.0';
+  $theme_ver = '2.0.0' . time();
   wp_enqueue_style('life-main-css', $theme_dir . '/assets/css/main.css', array(), $theme_ver, 'all');
   wp_enqueue_script('life-main-js', $theme_dir . '/assets/js/main.js', array('jquery'), $theme_ver, true);
   
@@ -48,6 +48,42 @@ function life_enqueue_main() {
   }
 }
 add_action('wp_enqueue_scripts', 'life_enqueue_main');
+
+/**
+ * Helper to send JSON response and close connection immediately, 
+ * continuing execution in background (requires FastCGI/PHP-FPM).
+ */
+function life_fast_response($data) {
+    // Clear any output that may have been generated so far
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+    
+    ignore_user_abort(true);
+    ob_start();
+    
+    $response = json_encode(['success' => true, 'data' => $data]);
+    echo $response;
+    
+    $size = ob_get_length();
+    
+    // Disable compression for this response to ensure Content-Length is accurate
+    if (function_exists('apache_setenv')) {
+        apache_setenv('no-gzip', 1);
+    }
+    ini_set('zlib.output_compression', 0);
+    
+    header('Content-Type: application/json');
+    header('Content-Length: ' . $size);
+    header('Connection: close');
+    
+    ob_end_flush();
+    flush();
+    
+    if (function_exists('fastcgi_finish_request')) {
+        fastcgi_finish_request();
+    }
+}
 
 /**
  * AJAX handler to update Salesforce Lead EOI (Expression of Interest) by email
@@ -146,47 +182,30 @@ function life_ajax_update_lead_eoi() {
   // Get the form ID from the phone entry
   $form_id = $gform_entry['form_id'] ?? 0;
 
-  /**
-   * Heavy work moved async:
-   * - Resending Gravity Forms notifications (can be slow due to wp_mail/SMTP)
-   * - Salesforce update (already async)
-   */
-
-  // Schedule notifications resend in the background
-  wp_schedule_single_event(time(), 'life_async_resend_gform_notifications', [$entry_id, $form_id]);
-
-  // Update Salesforce Lead EOI - ASYNC
-  // Schedule the event to run immediately in the background
-  wp_schedule_single_event(time(), 'life_async_lead_eoi_update', [$email, $phone, $ausdrisk_result]);
-
-  // Trigger cron immediately (fire and forget) so async tasks start ASAP
-  if (function_exists('spawn_cron')) {
-    spawn_cron(time());
-  }
-  
-  $sf_update_attempted = true; // Assumed true as it's scheduled
-  $sf_lead_found = true; // Assumed
-  $sf_lead_id = 'pending_async';
-  $sf_errors = [];
-
-  wp_send_json_success([
-    'message' => 'Lead updated and notification sent successfully (SF update scheduled).',
+  // Return success immediately to client
+  life_fast_response([
+    'message' => 'Lead updated and notification sent successfully.',
     'entry_id' => $entry_id,
-    'sf_lead_id' => $sf_lead_id,
-    'sf_lead_found' => $sf_lead_found,
-    'sf_update_attempted' => $sf_update_attempted,
-    'sf_errors' => $sf_errors,
     'ausdrisk_result' => $ausdrisk_result,
     'phone_number' => $phone,
   ]);
+
+  // --- HEAVY PROCESSING STARTS HERE ---
+  // Any output from here on will be ignored by the client due to fast_response logic
+  
+  // Resend notifications directly
+  life_handle_resend_gform_notifications($entry_id, $form_id);
+
+  // Update Salesforce Lead EOI - DIRECT
+  life_handle_lead_eoi_update($email, $phone, $ausdrisk_result);
+  
+  exit; // Ensure WP doesn't append '0' or anything else
 }
 
 /**
- * Async handler to resend Gravity Forms notifications for an entry.
- * This is intentionally async to keep the EOI submit response fast.
+ * Helper handler to resend Gravity Forms notifications for an entry.
  */
-add_action('life_async_resend_gform_notifications', 'life_handle_async_resend_gform_notifications', 10, 2);
-function life_handle_async_resend_gform_notifications($entry_id, $form_id) {
+function life_handle_resend_gform_notifications($entry_id, $form_id) {
   if (!class_exists('GFAPI') || !class_exists('GFCommon')) {
     return;
   }
@@ -215,10 +234,9 @@ function life_handle_async_resend_gform_notifications($entry_id, $form_id) {
 }
 
 /**
- * Async handler for EOI Update
+ * Helper handler for EOI Update
  */
-add_action('life_async_lead_eoi_update', 'life_handle_async_lead_eoi_update', 10, 3);
-function life_handle_async_lead_eoi_update($email, $phone, $ausdrisk_result) {
+function life_handle_lead_eoi_update($email, $phone, $ausdrisk_result) {
     if (!function_exists('\SfFuncs\queryLeadByEmail')) {
         return; 
     }
@@ -291,37 +309,32 @@ function life_ajax_update_lead_details() {
     return;
   }
 
-  // Check if Lead already exists in Salesforce - ASYNC MOVED
-  
-  // Schedule the background task
-  $args = [
-    $email,
-    $first_name,
-    $last_name,
-    $postcode
-  ];
-  wp_schedule_single_event(time(), 'life_async_lead_details_update', $args);
+  // Check if Lead already exists in Salesforce - FAST RESPONSE THEN PROCESS
   
   // Return success immediately
-  wp_send_json_success([
-    'message' => 'Lead update scheduled successfully.',
-    'action' => 'scheduled',
-    'sf_lead_id' => 'pending_async',
+  life_fast_response([
+    'message' => 'Lead update received.',
+    'action' => 'processing',
     'email' => $email,
     'first_name' => $first_name,
     'last_name' => $last_name,
     'postcode' => $postcode,
   ]);
+
+  // --- HEAVY PROCESSING STARTS HERE ---
+  // Any output from here on will be ignored by the client
+  life_handle_lead_details_update($email, $first_name, $last_name, $postcode);
+  
+  exit; // Ensure WP doesn't append '0'
 }
 
 /**
- * Async handler for Lead Details Update
+ * Helper handler for Lead Details Update
  */
-add_action('life_async_lead_details_update', 'life_handle_async_lead_details_update', 10, 4);
-function life_handle_async_lead_details_update($email, $first_name, $last_name, $postcode) {
+function life_handle_lead_details_update($email, $first_name, $last_name, $postcode) {
     if (!function_exists('\SfFuncs\queryLeadByEmail') || !function_exists('\SfFuncs\updateLeadById') || !function_exists('\SfFuncs\postDataToSalesforce')) {
-        error_log('Salesforce functions not available for async details update.');
-        return;
+        error_log('Salesforce functions not available for details update.');
+        return ['error' => 'SF functions missing'];
     }
 
     $existing_lead = \SfFuncs\queryLeadByEmail($email);
@@ -341,6 +354,7 @@ function life_handle_async_lead_details_update($email, $first_name, $last_name, 
     // Determine if we should UPDATE or INSERT
     // We update if a lead exists AND it hasn't reached "EOI received" status
     $should_update = (!empty($sf_lead_id) && $sf_lead_status !== 'EOI received');
+    $errors = [];
 
     if ($should_update) {
         // --- UPDATE LOGIC ---
@@ -351,7 +365,7 @@ function life_handle_async_lead_details_update($email, $first_name, $last_name, 
 
         $errors = \SfFuncs\updateLeadById($sf_lead_id, $sf_data);
         if (!empty($errors)) {
-            error_log('SF Async Update Error (' . $email . '): ' . print_r($errors, true));
+            error_log('SF Update Error (' . $email . '): ' . print_r($errors, true));
         }
     } else {
         // --- INSERT LOGIC --- 
@@ -366,9 +380,10 @@ function life_handle_async_lead_details_update($email, $first_name, $last_name, 
 
         $errors = \SfFuncs\postDataToSalesforce($insert_data);
         if (!empty($errors)) {
-            error_log('SF Async Insert Error (' . $email . '): ' . print_r($errors, true));
+            error_log('SF Insert Error (' . $email . '): ' . print_r($errors, true));
         }
     }
+    return $errors;
 }
 
 /**
@@ -381,22 +396,8 @@ function life_handle_async_lead_details_update($email, $first_name, $last_name, 
  * @param array $form The form object
  * @return void
  */
-// Replaced with async scheduler
-add_action('gform_after_submission', 'life_schedule_gform_salesforce_sync', 10, 2);
-function life_schedule_gform_salesforce_sync($entry, $form) {
-    // Schedule the event to run immediately in the background
-    // Pass $entry and $form. Note: passing full objects to cron args can be heavy or problematic serialization-wise.
-    // However, for single event it is usually handled. Better to pass entry ID and reconstruct form if needed,
-    // but gform_after_submission provides full array.
-    // Let's pass entry and form ID to stay safe and lightweight.
-    
-    wp_schedule_single_event(time(), 'life_async_gform_submission', [$entry, $form]);
-    
-    // Trigger cron immediately (fire and forget)
-    spawn_cron(time());
-}
-
-add_action('life_async_gform_submission', 'life_process_gform_submission_salesforce_sync', 10, 2);
+// Direct execution for Salesforce sync after submission
+add_action('gform_after_submission', 'life_process_gform_submission_salesforce_sync', 10, 2);
 function life_process_gform_submission_salesforce_sync($entry, $form) {
   
   // ============================================

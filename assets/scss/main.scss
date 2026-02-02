@@ -554,11 +554,6 @@ body {
                 @media (max-width: 767px) {
                   top: 32px;
                 }
-                &::after {
-                  content: " *";
-                  color: #c02b0a;
-                  font-weight: normal;
-                }
               }
             }
             &.acceptable-non-vic-regions {

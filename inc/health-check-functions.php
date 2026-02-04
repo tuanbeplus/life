@@ -29,12 +29,13 @@ function life_enqueue_main() {
     $cald_languages = get_field('cald_languages', $post_id);
     $gravity_form_id = get_field('gravity_form_id', $post_id) ?: 2;
     $dv_redirect_url = get_field('diabetes_victoria_redirect_url', 'options') ?: '/living-with-diabetes/';
-    $ausdrisk_language = get_field('ausdrisk_language', $post_id);
+    $ausdrisk_language = get_field('ausdrisk_language', $post_id) ?: 'english';
     $tracking_event_prefix = $events_prefix_arr[$ausdrisk_language] ?? 'English';
     $eligible_result_acf = get_field('eligible_result', get_the_ID());
     $eoi_form = $eligible_result_acf ['eoi_form'] ?? '';
     $submit_button_text = $eoi_form['submit_button_text'] ?? '';
     $submit_loading_text = $eoi_form['submit_loading_text'] ?? '';
+    $share_button_text = get_field('share_button_text', get_the_ID());
 
     wp_localize_script('life-main-js', 'lifeHealthCheck', array(
       'gravityFormId' => $gravity_form_id,
@@ -44,6 +45,7 @@ function life_enqueue_main() {
       'trackingEventPrefix' => $tracking_event_prefix,
       'submitButtonText' => $submit_button_text,
       'submitLoadingText' => $submit_loading_text,
+      'shareBtnText' => $share_button_text,
     ));
   }
 }
@@ -106,6 +108,7 @@ function life_ajax_update_lead_eoi() {
   $phone_field_id = isset($_POST['phone_field_id']) ? absint($_POST['phone_field_id']) : 0;
   $result_field_id = isset($_POST['result_field_id']) ? absint($_POST['result_field_id']) : 0;
   $ausdrisk_result = isset($_POST['ausdrisk_result']) ? sanitize_text_field($_POST['ausdrisk_result']) : 'EOI received';
+  $comfortable_english = isset($_POST['comfortable_english']) ? sanitize_text_field($_POST['comfortable_english']) : '';
 
   // Validate email
   if (empty($email) || !is_email($email)) {
@@ -197,7 +200,7 @@ function life_ajax_update_lead_eoi() {
   life_handle_resend_gform_notifications($entry_id, $form_id);
 
   // Update Salesforce Lead EOI - DIRECT
-  life_handle_lead_eoi_update($email, $phone, $ausdrisk_result);
+  life_handle_lead_eoi_update($email, $phone, $ausdrisk_result, $comfortable_english);
   
   exit; // Ensure WP doesn't append '0' or anything else
 }
@@ -236,7 +239,7 @@ function life_handle_resend_gform_notifications($entry_id, $form_id) {
 /**
  * Helper handler for EOI Update
  */
-function life_handle_lead_eoi_update($email, $phone, $ausdrisk_result) {
+function life_handle_lead_eoi_update($email, $phone, $ausdrisk_result, $comfor_eng = '') {
     if (!function_exists('\SfFuncs\queryLeadByEmail')) {
         return; 
     }
@@ -250,6 +253,7 @@ function life_handle_lead_eoi_update($email, $phone, $ausdrisk_result) {
         'MobilePhone' => $phone,
         'Status' => $ausdrisk_result,
         'User_Status_Detail__c' => '',
+        'Comfortable_speaking_English__c' => $comfor_eng,
       ];
       
       // Update Lead in Salesforce
@@ -403,10 +407,11 @@ function life_process_gform_submission_salesforce_sync($entry, $form) {
   // ============================================
   // CONFIGURATION - Customize these settings
   // ============================================ 
-  
+
   // Specify form IDs to process (leave empty array to process all forms)
   // Example: $allowed_form_ids = [2, 3, 5];
-  $allowed_form_ids = [2];
+  $gform_id = get_field('gravity_form_id', get_the_ID()) ?: 2;
+  $allowed_form_ids = [$gform_id];
   
   // Skip if form ID is restricted and current form is not in the list
   if (!empty($allowed_form_ids) && !in_array($form['id'], $allowed_form_ids)) {
@@ -681,15 +686,38 @@ function hc_ausdrisk_result_eligible_shortcode($atts) {
   $phone_validation = $eoi_form['phone_validation'] ?? '';
   $submit_button_text = $eoi_form['submit_button_text'] ?? '';
   $submit_loading_text = $eoi_form['submit_loading_text'] ?? '';
+  $comfor_eng_question = $eoi_form['comfortable_english_question'] ?? 'Do you feel comfortable speaking English?';
+  $comfor_eng_yes_text = $eoi_form['comfortable_english_yes'] ?? 'Yes';
+  $comfor_eng_no_text = $eoi_form['comfortable_english_no'] ?? 'No';
   $content_after_eoi = $eligible_result_acf ['content_after_eoi_form'] ?? '';
+  $ausdrisk_language = get_field('ausdrisk_language', get_the_ID()) ?: 'english';
+  $form_class = '';
+  if ($ausdrisk_language != 'english') {
+    $form_class = 'cald';
+  }
   ?>
   
   <?php echo wpautop($content_before_eoi); ?>
-  <form class="final-step-form">
+  <form class="final-step-form <?php echo $form_class; ?>">
     <div class="field">
         <label for="phone-number"><?php echo $phone_placeholder; ?></label>
         <input id="phone-number" name="phone_number" type="tel" placeholder="<?php echo $phone_placeholder; ?>">
     </div>
+    <?php  if ($ausdrisk_language != 'english'): ?>
+      <div class="field comfortable-english">
+          <p><?php echo $comfor_eng_question; ?></p>
+          <div class="choices-container">
+              <div class="choice-wrapper">
+                  <input id="input-comfortable-english-yes" name="comfortable_english" type="radio" value="Yes" checked>
+                  <label for="input-comfortable-english-yes"><?php echo $comfor_eng_yes_text; ?></label>
+              </div>
+              <div class="choice-wrapper">
+                  <input id="input-comfortable-english-no" name="comfortable_english" type="radio" value="No">
+                  <label for="input-comfortable-english-no"><?php echo $comfor_eng_no_text; ?></label>
+              </div>
+          </div>
+      </div>
+    <?php endif; ?>
     <div class="input-container">
         <input id="btn-submit-eoi" type="submit" value="<?php echo $submit_button_text; ?>">
     </div>
@@ -772,3 +800,34 @@ function hc_get_latest_gform_entry_by_email($form_id, $email, $email_field_class
 
   return !empty($entries) ? $entries[0] : null;
 }
+
+/**
+ * Disable the visual editor for the Life Health Check page template
+ */
+function life_health_check_disable_editor() {
+    // Check if we are in the admin area
+    if (!is_admin()) {
+        return;
+    }
+
+    // Get the current post ID
+    $post_id = null;
+    if (isset($_GET['post'])) {
+        $post_id = $_GET['post'];
+    } elseif (isset($_POST['post_ID'])) {
+        $post_id = $_POST['post_ID'];
+    }
+
+    if (!$post_id) {
+        return;
+    }
+
+    // Get the page template
+    $template_file = get_post_meta($post_id, '_wp_page_template', true);
+
+    // Disable the editor if it matches our template
+    if ($template_file === 'page-templates/life-health-check.php') {
+        remove_post_type_support('page', 'editor');
+    }
+}
+add_action('admin_init', 'life_health_check_disable_editor');

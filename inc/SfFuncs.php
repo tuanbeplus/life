@@ -37,74 +37,127 @@ function recaptchaCheck($data) {
     return json_decode(curl_exec($ch));
 }
 
-function getSalesforceAccessToken($ch) {
+function getSalesforceAccessToken() {
+    $ch = curl_init();
+
+    $password = SF_PASSWORD;
+    if (defined('SF_TOKEN') && !empty(SF_TOKEN)) {
+        $password .= SF_TOKEN;
+    }
+
     $auth_params = [
-        'grant_type' => 'password',
-        'client_id' => SF_CLIENT_ID,
+        'grant_type'    => 'password',
+        'client_id'     => SF_CLIENT_ID,
         'client_secret' => SF_CLIENT_SECRET,
-        'username' => SF_USERNAME,
-        'password' => SF_PASSWORD . SF_TOKEN,
+        'username'      => SF_USERNAME,
+        'password'      => $password,
     ];
-    curl_setopt(
-        $ch,
-        CURLOPT_URL,
-        SF_ENV . '/services/oauth2/token?' . http_build_query($auth_params)
-    );
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    //curl_setopt($ch, CURLOPT_HEADER, true);
-    return curl_exec($ch);
+
+    curl_setopt_array($ch, [
+        CURLOPT_URL            => rtrim(SF_ENV, '/') . '/services/oauth2/token',
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => http_build_query($auth_params),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER     => [
+            'Content-Type: application/x-www-form-urlencoded'
+        ],
+        CURLOPT_TIMEOUT        => 30,
+    ]);
+
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    return $response;
 }
 
 function postDataToSalesforce($sf_data) {
-    $curlHandleForToken = curl_init();
-    $response = getSalesforceAccessToken($curlHandleForToken);
-    // print_r($response);
-    $responseStatus = curl_getinfo($curlHandleForToken, CURLINFO_HTTP_CODE);
-    // print_r($responseStatus);
-    // exit();
-    if ($responseStatus == 200) {
-        $auth = json_decode($response);
-        $ch = curl_init();
-        // $auth->instance_url: https://lifeprogram.my.salesforce.com
-        curl_setopt($ch, CURLOPT_URL, $auth->instance_url . '/services/data/v52.0/sobjects/Lead/');
-        curl_setopt($ch, CURLOPT_HEADER, true);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($sf_data));
-        curl_setopt(
-            $ch,
-            CURLOPT_HTTPHEADER,
+
+    // -------------------------
+    // 1. Get access token
+    // -------------------------
+    $response = getSalesforceAccessToken();
+    if ($response === false) {
+        return [
+            ['message' => 'Failed to get Salesforce token']
+        ];
+    }
+
+    $auth = json_decode($response);
+
+    if (empty($auth->access_token) || empty($auth->instance_url)) {
+        return [
             [
-                'Authorization: Bearer ' . $auth->access_token,
-                'Content-Type: application/json',
+                'message'  => 'Invalid auth response',
+                'response' => $response
             ]
-        );
-        curl_setopt($ch, CURLINFO_HEADER_OUT, true);
-        $response = curl_exec($ch);
-        
-        if (PRINT_SALESFORCE_RESPONSE) {
-            \SfDebug\printSalesforceResponse($sf_data, $ch, $response);
-        }
-        $sfPostErrors = [];
-        foreach (explode("\r\n\r\n", $response) as $part) {
-            $data = json_decode($part, true);
-            if ($data) {
-                foreach ($data as $d) {
-                    if (isset($d['errorCode'])) {
-                        $sfPostErrors[] = $d;
-                    }
-                }
+        ];
+    }
+
+    // -------------------------
+    // 2. Insert Lead
+    // -------------------------
+    $ch = curl_init();
+
+    curl_setopt_array($ch, [
+        CURLOPT_URL            => rtrim($auth->instance_url, '/') . '/services/data/v52.0/sobjects/Lead',
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => json_encode($sf_data),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER     => [
+            'Authorization: Bearer ' . $auth->access_token,
+            'Content-Type: application/json',
+        ],
+        CURLOPT_TIMEOUT        => 30,
+    ]);
+
+    $response = curl_exec($ch);
+
+    if ($response === false) {
+        $err = curl_error($ch);
+        curl_close($ch);
+        return [
+            [
+                'message' => 'cURL error',
+                'error'   => $err
+            ]
+        ];
+    }
+
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    // -------------------------
+    // 3. Handle Salesforce response
+    // -------------------------
+    if ($httpCode >= 200 && $httpCode < 300) {
+        // SUCCESS
+        return [];
+    }
+
+    // Salesforce error format: array of { errorCode, message }
+    $decoded = json_decode($response, true);
+
+    if (is_array($decoded)) {
+        $sfErrors = [];
+        foreach ($decoded as $e) {
+            if (isset($e['errorCode'])) {
+                $sfErrors[] = $e;
             }
         }
-        return $sfPostErrors;
-    } else {
-        if (PRINT_SALESFORCE_RESPONSE) {
-            echo '<h2>$responseStatus</h2>';
-            echo '<h1>CURLINFO_HTTP_CODE: '.$responseStatus.'</h1>';
+
+        if (!empty($sfErrors)) {
+            return $sfErrors;
         }
-        return ['message' => 'CURLINFO_HTTP_CODE: '.$responseStatus];
     }
+
+    // Fallback error
+    return [
+        [
+            'message'   => 'Salesforce unknown error',
+            'http_code' => $httpCode,
+            'response'  => $response
+        ]
+    ];
 }
 
 /**
@@ -117,12 +170,10 @@ function postDataToSalesforce($sf_data) {
  * @return array|false Returns the latest Lead record with Id on success, false on failure
  */
 function queryLeadByEmail($email) {
-    $curlHandleForToken = curl_init();
-    $response = getSalesforceAccessToken($curlHandleForToken);
-    $responseStatus = curl_getinfo($curlHandleForToken, CURLINFO_HTTP_CODE);
+    $response = getSalesforceAccessToken();
+    $auth = json_decode($response);
     
-    if ($responseStatus == 200) {
-        $auth = json_decode($response);
+    if (isset($auth->access_token) && isset($auth->instance_url)) {
         $ch = curl_init();
         
         // Escape single quotes in email for SOQL query
@@ -170,12 +221,10 @@ function getLeadById($leadId) {
         return false;
     }
 
-    $curlHandleForToken = curl_init();
-    $response = getSalesforceAccessToken($curlHandleForToken);
-    $responseStatus = curl_getinfo($curlHandleForToken, CURLINFO_HTTP_CODE);
+    $response = getSalesforceAccessToken();
+    $auth = json_decode($response);
     
-    if ($responseStatus == 200) {
-        $auth = json_decode($response);
+    if (isset($auth->access_token) && isset($auth->instance_url)) {
         $ch = curl_init();
         
         $url = $auth->instance_url . '/services/data/v52.0/sobjects/Lead/' . $leadId;
@@ -202,11 +251,6 @@ function getLeadById($leadId) {
     return false;
 }
 
-// echo '<pre>';
-// print_r(getLeadById('00QOZ00000LtKI92AN'));
-// echo '</pre>';
-
-
 /**
  * Update Salesforce Lead by ID
  *
@@ -215,12 +259,10 @@ function getLeadById($leadId) {
  * @return array Returns array of errors, empty array on success
  */
 function updateLeadById($leadId, $sf_data) {
-    $curlHandleForToken = curl_init();
-    $response = getSalesforceAccessToken($curlHandleForToken);
-    $responseStatus = curl_getinfo($curlHandleForToken, CURLINFO_HTTP_CODE);
+    $response = getSalesforceAccessToken();
+    $auth = json_decode($response);
     
-    if ($responseStatus == 200) {
-        $auth = json_decode($response);
+    if (isset($auth->access_token) && isset($auth->instance_url)) {
         $ch = curl_init();
         
         curl_setopt($ch, CURLOPT_URL, $auth->instance_url . '/services/data/v52.0/sobjects/Lead/' . $leadId);
@@ -274,10 +316,9 @@ function updateLeadById($leadId, $sf_data) {
         return $sfPostErrors;
     } else {
         if (PRINT_SALESFORCE_RESPONSE) {
-            echo '<h2>$responseStatus</h2>';
-            echo '<h1>CURLINFO_HTTP_CODE: '.$responseStatus.'</h1>';
+            echo '<h2>Failed to get access token</h2>';
         }
-        return [['message' => 'CURLINFO_HTTP_CODE: '.$responseStatus]];
+        return [['message' => 'Failed to get access token: ' . $response]];
     }
 }
 

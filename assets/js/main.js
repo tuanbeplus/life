@@ -6,6 +6,7 @@ jQuery(function ($) {
     const lhcFormId = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.gravityFormId) ? lifeHealthCheck.gravityFormId : 2;
     const lhcFormClass = 'life-health-check-form';
     const caldLanguages = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.caldLanguages) ? lifeHealthCheck.caldLanguages : {};
+    const ausdriskLanguage = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.ausdriskLanguage) ? lifeHealthCheck.ausdriskLanguage : 'english';
     const dvRedirectUrl = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.dvRedirectUrl) ? lifeHealthCheck.dvRedirectUrl : "/living-with-diabetes/";
     const trackingEventPrefix = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.trackingEventPrefix) ? lifeHealthCheck.trackingEventPrefix : "English";
     const submitLoadingText = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.submitLoadingText) ? lifeHealthCheck.submitLoadingText : "Submitting...";
@@ -21,6 +22,7 @@ jQuery(function ($) {
     const introNextButton = introPage.find('.gform_next_button');
     const detailsNextButton = detailsPage.find('.gform_next_button');
     const hcSubmitButton = hcForm.find('.gform_button[type="submit"]');
+    const shareBtnText = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.shareBtnText) ? lifeHealthCheck.shareBtnText : "Share health check with a friend or family";
 
     const livingWithDiabetesField = introPage.find('.gfield.living_with_diabetes');
     const postCodeField = introPage.find('.gfield.postcode');
@@ -211,49 +213,56 @@ jQuery(function ($) {
     // Comprehensive waist table data structure
     // Format: gender -> category -> ranges (each range has display label and Salesforce value)
     const waistTableData = {
+        _headers: {
+            english: { waist: 'Waist (cm)', range: 'Range' },
+            chinese_s: { waist: '腰围（厘米)', range: '范围' },
+            chinese_t: { waist: '腰圍 (釐米)', range: '範圍' },
+            arabic: { waist: 'الخصر (سم)', range: 'تصنيف' },
+            vietnamese: { waist: 'Vòng eo (cm)', range: 'Phạm vi' }
+        },
         male: {
             atsi: {  // Aboriginal or Torres Strait Islander = Yes
                 ranges: [
-                    { label: 'Less than 90cm', sfValue: 'Less than 90cm' },
-                    { label: '90cm - 100cm', sfValue: '90 - 100cm' },
-                    { label: 'More than 100cm', sfValue: 'More than 100cm' }
+                    { label: { english: 'Less than 90cm', chinese_s: '小于 90 厘米', chinese_t: '小於 90 釐米', arabic: 'أقلىمنىى90ىمسى', vietnamese: 'Dưới 90cm' }, sfValue: 'Less than 90cm' },
+                    { label: { english: '90cm - 100cm', chinese_s: '90至100厘米', chinese_t: '90 至 100 釐米', arabic: 'ىمس100-ى90', vietnamese: '90cm - 100cm' }, sfValue: '90 - 100cm' },
+                    { label: { english: 'More than 100cm', chinese_s: '超过 100 厘米', chinese_t: '超過 100 釐米', arabic: 'أكثر من 100 سم', vietnamese: 'Hơn 100cm' }, sfValue: 'More than 100cm' }
                 ]
             },
             asia: {  // ATSI = No, Ethnicity = Asia
                 ranges: [
-                    { label: 'Less than 90cm', sfValue: 'Less than 90cm' },
-                    { label: '90cm - 100cm', sfValue: '90 - 100cm' },
-                    { label: 'More than 100cm', sfValue: 'More than 100cm' }
+                    { label: { english: 'Less than 90cm', chinese_s: '小于 90 厘米', chinese_t: '小於 90 釐米', arabic: 'أقلىمنىى90ىمسى', vietnamese: 'Dưới 90cm' }, sfValue: 'Less than 90cm' },
+                    { label: { english: '90cm - 100cm', chinese_s: '90至100厘米', chinese_t: '90 至 100 釐米', arabic: 'ىمس100-ى90', vietnamese: '90cm - 100cm' }, sfValue: '90 - 100cm' },
+                    { label: { english: 'More than 100cm', chinese_s: '超过 100 厘米', chinese_t: '超過 100 釐米', arabic: 'أكثر من 100 سم', vietnamese: 'Hơn 100cm' }, sfValue: 'More than 100cm' }
                 ]
             },
             other: {  // ATSI = No, Ethnicity = Not Asia
                 ranges: [
-                    { label: 'Less than 102cm', sfValue: 'Less than 102 cm' },
-                    { label: '102cm - 110cm', sfValue: '102-110cm' },
-                    { label: 'More than 110cm', sfValue: 'More than 110cm' }
+                    { label: { english: 'Less than 102cm', chinese_s: '小于 102 厘米', chinese_t: '小於 102 釐米', arabic: 'أقل من 102 سم', vietnamese: 'Dưới 102cm' }, sfValue: 'Less than 102 cm' },
+                    { label: { english: '102cm - 110cm', chinese_s: '102至110厘米', chinese_t: '102 至 110 釐米', arabic: '102 سم - 110 سم', vietnamese: '102cm - 110cm' }, sfValue: '102-110cm' },
+                    { label: { english: 'More than 110cm', chinese_s: '超过 110 厘米', chinese_t: '超過 110 釐米', arabic: 'أكثر من 110 سم', vietnamese: 'Hơn 110cm' }, sfValue: 'More than 110cm' }
                 ]
             }
         },
         female: {
             atsi: {  // Aboriginal or Torres Strait Islander = Yes
                 ranges: [
-                    { label: 'Less than 80cm', sfValue: 'Less than 80cm' },
-                    { label: '80cm - 90cm', sfValue: '80-90cm' },
-                    { label: 'More than 90cm', sfValue: 'More than 90cm' }
+                    { label: { english: 'Less than 80cm', chinese_s: '小于 80 厘米', chinese_t: '小於 80 釐米', arabic: 'أقل من 80 سم', vietnamese: 'Dưới 80cm' }, sfValue: 'Less than 80cm' },
+                    { label: { english: '80cm - 90cm', chinese_s: '80至90厘米', chinese_t: '80 至 90 釐米', arabic: '90-80 سم', vietnamese: '80 - 90cm' }, sfValue: '80-90cm' },
+                    { label: { english: 'More than 90cm', chinese_s: '超过 90 厘米', chinese_t: '超過 90 釐米', arabic: 'أكثر من 90 سم', vietnamese: 'Hơn 90cm' }, sfValue: 'More than 90cm' }
                 ]
             },
             asia: {  // ATSI = No, Ethnicity = Asia
                 ranges: [
-                    { label: 'Less than 80cm', sfValue: 'Less than 80cm' },
-                    { label: '80cm - 90cm', sfValue: '80-90cm' },
-                    { label: 'More than 90cm', sfValue: 'More than 90cm' }
+                    { label: { english: 'Less than 80cm', chinese_s: '小于 80 厘米', chinese_t: '小於 80 釐米', arabic: 'أقل من 80 سم', vietnamese: 'Dưới 80cm' }, sfValue: 'Less than 80cm' },
+                    { label: { english: '80cm - 90cm', chinese_s: '80至90厘米', chinese_t: '80 至 90 釐米', arabic: '90-80 سم', vietnamese: '80 - 90cm' }, sfValue: '80-90cm' },
+                    { label: { english: 'More than 90cm', chinese_s: '超过 90 厘米', chinese_t: '超過 90 釐米', arabic: 'أكثر من 90 سم', vietnamese: 'Hơn 90cm' }, sfValue: 'More than 90cm' }
                 ]
             },
             other: {  // ATSI = No, Ethnicity = Not Asia
                 ranges: [
-                    { label: 'Less than 88cm', sfValue: 'Less than 88 cm' },
-                    { label: '88cm - 100cm', sfValue: '88-100cm' },
-                    { label: 'More than 100cm', sfValue: 'More than 100cm' }
+                    { label: { english: 'Less than 88cm', chinese_s: '小于 88 厘米', chinese_t: '小於 88 釐米', arabic: 'أقل من 88 سم', vietnamese: 'Dưới 88cm' }, sfValue: 'Less than 88 cm' },
+                    { label: { english: '88cm - 100cm', chinese_s: '88至100厘米', chinese_t: '88 至 100 釐米', arabic: '88-100سم', vietnamese: '88 - 100cm' }, sfValue: '88-100cm' },
+                    { label: { english: 'More than 100cm', chinese_s: '超过 100 厘米', chinese_t: '超過 100 釐米', arabic: 'أكثر من 100 سم', vietnamese: 'Hơn 100cm' }, sfValue: 'More than 100cm' }
                 ]
             }
         }
@@ -261,11 +270,14 @@ jQuery(function ($) {
 
     // Function to render table HTML from ranges data
     function renderWaistTable(rangesData) {
+        const headers = waistTableData._headers[ausdriskLanguage] || waistTableData._headers.english;
+        const labels = rangesData.map(r => r.label[ausdriskLanguage] || r.label.english);
+
         const desktopTable = `
             <table class="-desktop waist-table">
                 <thead>
                     <tr>
-                        <th>Range</th>
+                        <th>${headers.range}</th>
                         <th>1</th>
                         <th>2</th>
                         <th>3</th>
@@ -273,10 +285,10 @@ jQuery(function ($) {
                 </thead>
                 <tbody>
                     <tr>
-                        <td>Waist (cm)</td>
-                        <td>${rangesData[0].label}</td>
-                        <td>${rangesData[1].label}</td>
-                        <td>${rangesData[2].label}</td>
+                        <td>${headers.waist}</td>
+                        <td>${labels[0]}</td>
+                        <td>${labels[1]}</td>
+                        <td>${labels[2]}</td>
                     </tr>
                 </tbody>
             </table>
@@ -286,19 +298,19 @@ jQuery(function ($) {
             <table class="-mobile waist-table">
                 <tbody>
                     <tr>
-                        <th>Waist (cm)</th>
-                        <th>Range</th>
+                        <th>${headers.waist}</th>
+                        <th>${headers.range}</th>
                     </tr>
                     <tr>
-                        <td>${rangesData[0].label}</td>
+                        <td>${labels[0]}</td>
                         <td>1</td>
                     </tr>
                     <tr>
-                        <td>${rangesData[1].label}</td>
+                        <td>${labels[1]}</td>
                         <td>2</td>
                     </tr>
                     <tr>
-                        <td>${rangesData[2].label}</td>
+                        <td>${labels[2]}</td>
                         <td>3</td>
                     </tr>
                 </tbody>
@@ -572,6 +584,8 @@ jQuery(function ($) {
             });
             hasHCViewed = true;
         }
+
+        $('.share-wrapper .button span').text(shareBtnText);
     }
 
     // Q12 Mutual Exclusivity Logic
@@ -1279,6 +1293,7 @@ jQuery(function ($) {
         const $validateMess = $form.find('.validate-mess');
         const phoneValue = $.trim($phoneInput.val());
 
+
         // Basic phone validation (at least 8 digits)
         const phoneRegex = /^[0-9\s\-\+\(\)]{8,}$/;
         const digitsOnly = phoneValue.replace(/\D/g, '');
@@ -1300,6 +1315,9 @@ jQuery(function ($) {
         const phoneFieldId = hcFormWrapper.find('#input-ausdrisk-phone-gfield-id').val();
         const resultFieldId = hcFormWrapper.find('#input-ausdrisk-result-gfield-id').val();
         const ausdriskResult = hcFormWrapper.find('#input-ausdrisk-result').val();
+        const comfortableEnglishVal = $form.find('input[name="comfortable_english"]:checked').val();
+
+        console.log(comfortableEnglishVal);
 
         if (!email) {
             $validateMess.text('Email not found. Please contact support.').show();
@@ -1322,6 +1340,8 @@ jQuery(function ($) {
         const $submitBtn = $form.find('#btn-submit-eoi');
         $phoneInput.prop('disabled', true);
         $submitBtn.prop('disabled', true).addClass('loading').val(submitLoadingText);
+        $form.find('.choices-container').addClass('loading');
+        $form.find('input[name="comfortable_english"]').prop('disabled', true);
 
         trackEvent(`${trackingEventPrefix}_Submit_EOI`, {
             form_id: lhcFormId,
@@ -1343,7 +1363,8 @@ jQuery(function ($) {
                 entry_id: entryId,
                 phone_field_id: phoneFieldId,
                 result_field_id: resultFieldId,
-                ausdrisk_result: ausdriskResult
+                ausdrisk_result: ausdriskResult,
+                comfortable_english: comfortableEnglishVal
             },
             success: function (response) {
                 if (response.success) {
@@ -1369,12 +1390,16 @@ jQuery(function ($) {
                     $validateMess.text(response.data && response.data.message ? response.data.message : 'An error occurred. Please try again.').show();
                     $submitBtn.prop('disabled', false).removeClass('loading').val(submitButtonText);
                     $phoneInput.prop('disabled', false);
+                    $form.find('.choices-container').removeClass('loading');
+                    comfortableEnglishInput.prop('disabled', false);
                 }
             },
             error: function (xhr, status, error) {
                 $validateMess.text('An error occurred. Please try again.').show();
                 $submitBtn.prop('disabled', false).removeClass('loading').val(submitButtonText);
                 $phoneInput.prop('disabled', false);
+                $form.find('.choices-container').removeClass('loading');
+                comfortableEnglishInput.prop('disabled', false);
             }
         });
 

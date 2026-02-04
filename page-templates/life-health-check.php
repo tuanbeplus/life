@@ -98,11 +98,8 @@ function get_cald_text($key, $default = '') {
                 </div>
                 <div id="loading-spinner">
                     <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24">
-                        <path d="M12 2a10 10 0 1 1-10 10" fill="none" stroke="#8dc63f" stroke-width="3" stroke-linecap="round">
-                            <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="0.8s" repeatCount="indefinite" />
-                        </path>
+                        <path d="M12 2a10 10 0 1 1-10 10" fill="none" stroke="#8dc63f" stroke-width="2" stroke-linecap="round" />
                     </svg>
-                    <p>Loading Pre-submission data...</p>
                 </div>
                 <?php echo do_shortcode( '[gravityform id="' . esc_attr($gravity_form_id) . '" title="false" description="false" ajax="true"]' ); ?>
                 <?php if(!empty($pre_lead_data) && $pre_lead_data['Status'] == 'No EOI') : ?>
@@ -136,7 +133,9 @@ function get_cald_text($key, $default = '') {
                         ?>
                     </div>
                 </div>
-                <div class="share-wrapper"><inline-dialog-share></inline-dialog-share></div>
+                <div class="share-wrapper">
+                    <inline-dialog-share></inline-dialog-share>
+                </div>
             </div>
         </div>
     </section>

@@ -2,6 +2,73 @@
 body {
   // Health Check page wrapper
   &.life-health-check {
+    &.ar {
+      .hero-banner-sml {
+        direction: rtl;
+        text-align: right;
+      }
+      .language-link::before {
+        margin-right: 0 !important;
+        margin-left: 12px !important;
+      }
+      .progress-step::before {
+        margin-right: 0 !important;
+        margin-left: 12px !important;
+      }
+      .health-check-section .sidebar .languages::after {
+        left: -4px !important;
+        right: unset !important;
+      }
+      .health-check-section .sidebar .progress-checklist::after {
+        left: -4px !important;
+        right: unset !important;
+      }
+      #breadcrumbs ul {
+        flex-direction: row;
+        direction: rtl;
+        text-align: right;
+        > li:not(:first-child)::before {
+          content: "|";
+          display: block;
+          right: -15px !important;
+          left: unset !important;
+          position: absolute;
+          text-align: center;
+          top: 0;
+          width: 30px;
+          color: var(--colorBlack);
+        }
+      }
+      @media (max-width: 623px) {
+        .gform_wrapper form .gform_body .gform_fields .gfield .ginput_container_select {
+          margin-top: 16px !important;
+        }
+      }
+    }
+    &.zh {
+      @media (max-width: 560px) {
+        .gform_wrapper form .gform_body .gform_fields .gfield .ginput_container_select {
+          margin-top: 16px !important;
+        }
+      }
+    }
+    &.vi {
+      .gform_wrapper form .gform_body .gform_fields .gfield .ginput_container_select {
+        margin-top: 30px;
+        @media (max-width: 510px) {
+          margin-top: 0;
+        }
+      }
+      #breadcrumbs {
+        ul {
+          li {
+            em {
+              margin-left: 4px;
+            }
+          }
+        }
+      }
+    }
     .hero-banner-sml {
       @media (max-width: 1123px) {
         max-height: 220px;
@@ -66,6 +133,10 @@ body {
   }
 
   // Health Check Section
+  &.ar .health-check-section {
+    direction: rtl;
+    text-align: right;
+  }
   .health-check-section {
     padding-bottom: 100px;
     background-color: transparent;
@@ -327,23 +398,6 @@ body {
                 color: #000;
               }
             }
-            // Completed state
-            // &.completed {
-            //   .step-text {
-            //     font-weight: 600;
-            //     color: #000;
-            //   }
-
-            //   &::before {
-            //     width: 20px;
-            //     height: 20px;
-            //     background-image: url("/wp-content/themes/life/assets/imgs/circle-tick-icon.svg");
-            //     background-size: cover;
-            //     background-position: center;
-            //     background-repeat: no-repeat;
-            //     border: none;
-            //   }
-            // }
           }
         }
       }
@@ -431,8 +485,18 @@ body {
   width: 100%;
   top: 0;
   height: 100%;
-  z-index: 10;
+  z-index: 100;
   background-color: #fff;
+  &:after {
+    content: "";
+    position: absolute;
+    top: -10px;
+    left: 0;
+    width: 100%;
+    height: 20px;
+    background-color: #fff;
+    z-index: 100;
+  }
   svg {
     margin: 40px auto;
     animation: lhc-rotate 0.8s linear infinite;
@@ -469,6 +533,59 @@ body {
       &.loading {
         opacity: 0.5;
         pointer-events: none;
+      }
+
+      &.arabic {
+        input[type=text],
+        input[type=email],
+        input[type=url],
+        input[type=password],
+        input[type=tel],
+        input[type=search],
+        input[type=number],
+        textarea,
+        select {
+          direction: rtl !important;
+          text-align: right !important;
+        }
+        .gfield {
+          .ginput_container_select {
+              &::after {
+                left: 14px !important;
+                right: unset !important;
+              }
+            }
+          &.is_valid {
+            &.gfield--input-type-text,
+            &.gfield--input-type-email,
+            &.gfield--input-type-number {
+              .ginput_container {
+                &::after {
+                  left: 16px !important;
+                  right: unset !important;
+                }
+              }
+            }
+            .ginput_container_select {
+              .btn-clear-select {
+                left: 14px !important;
+                right: unset !important;
+              }
+            }
+          }
+        }
+        table tr th {
+          text-align: right !important;
+          &:first-child {
+            text-align: right !important;
+          }
+        }
+        table tr td {
+          text-align: right !important;
+          &:first-child {
+            text-align: right !important;
+          }
+        }
       }
 
       .gform_body {
@@ -795,12 +912,13 @@ body {
             &.postcode {
               .ginput_container {
                 width: fit-content;
+                
                 .validation_message {
                   white-space: nowrap;
                 }
               }
               input {
-                width: 120px;
+                width: 130px;
               }
               .gfield_description {
                 font-size: 14px;
@@ -810,25 +928,39 @@ body {
               }
             }
 
-            &.is_valid {
+            &.gfield--input-type-text,
+            &.gfield--input-type-email,
+            &.gfield--input-type-number {
+              .ginput_container {
+                position: relative;
+                &::after {
+                  opacity: 0;
+                  visibility: hidden;
+                  content: "";
+                  position: absolute;
+                  top: 50%;
+                  transform: translateY(-50%);
+                  right: 16px;
+                  display: block;
+                  width: 18px;
+                  height: 18px;
+                  background-image: url("/wp-content/themes/life/assets/imgs/circle-tick-icon.svg");
+                  background-size: cover;
+                  background-position: center;
+                  background-repeat: no-repeat;
+                  transition: all 0s;
+                }
+              }
+            }
+
+            &.is_valid:not(.is_invalid):not(.gfield_error) {
               &.gfield--input-type-text,
               &.gfield--input-type-email,
               &.gfield--input-type-number {
                 .ginput_container {
-                  position: relative;
                   &::after {
-                    content: "";
-                    position: absolute;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    right: 16px;
-                    display: block;
-                    width: 18px;
-                    height: 18px;
-                    background-image: url("/wp-content/themes/life/assets/imgs/circle-tick-icon.svg");
-                    background-size: cover;
-                    background-position: center;
-                    background-repeat: no-repeat;
+                    opacity: 1;
+                    visibility: visible;
                   }
                 }
               }
@@ -856,6 +988,17 @@ body {
                 }
                 &::after {
                   display: none;
+                }
+              }
+            }
+            &.is_typing {
+              &.gfield--input-type-text,
+              &.gfield--input-type-email,
+              &.gfield--input-type-number {
+                .ginput_container {
+                  &::after {
+                    display: none;
+                  }
                 }
               }
             }
@@ -1116,6 +1259,7 @@ body {
             color: #fff;
             font-weight: 600;
             border: none;
+            white-space: nowrap;
 
             &:first-child {
               text-align: left;
@@ -1127,6 +1271,7 @@ body {
             font-size: 14px;
             font-weight: 400;
             color: #222;
+            white-space: nowrap;
 
             // Highlight columns (like image)
             &:nth-child(2),
@@ -1153,6 +1298,20 @@ body {
   }
 }
 
+.ar {
+  .final-step-form {
+    input[type=tel],
+    textarea,
+    select {
+      direction: rtl !important;
+      text-align: right !important;
+    }
+    .validate-mess {
+      text-align: right !important;
+    }
+  }
+}
+
 // Gravity Forms confirmation message
 .gform_confirmation_wrapper, #thank-you {
   .final-step-form {
@@ -1164,6 +1323,14 @@ body {
     }
     &.cald {
       flex-direction: column;
+      .field {
+        input[type=tel], input[type=text] {
+          width: 54%;
+          @media (max-width: 767px) {
+            width: 100%;
+          }
+        }
+      }
     }
     .field {
       position: relative;

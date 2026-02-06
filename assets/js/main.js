@@ -414,8 +414,10 @@ jQuery(function ($) {
             const labelText = ($label.text() || '').trim();
             if (!labelText) return;
 
-            const firstChar = labelText.charAt(0).toUpperCase();
-            $label.attr('data-radio-first-char', firstChar);
+            const match = labelText.match(/[a-zA-Z0-9]/);
+            if (match) {
+                $label.attr('data-radio-first-char', match[0].toUpperCase());
+            }
         });
     }
 
@@ -947,65 +949,61 @@ jQuery(function ($) {
         }
 
         // Reset UI immediately while typing
-        parentField.removeClass('gfield_error is_invalid is_valid');
+        parentField.removeClass('gfield_error is_invalid is_valid').addClass('is_typing');
         parentField.find('.validation_message').remove();
         AcceptableNonVicMess.hide();
         nextButton.prop('disabled', true);
         pageFooter.hide().removeClass('active');
 
+        // Load acceptable non-VIC postcodes
+        let nonVicPostcodes = [];
+        const nonVicInput = $('#non_vic_postcodes_json');
+        if (nonVicInput.length && nonVicInput.val()) {
+            try {
+                nonVicPostcodes = JSON.parse(nonVicInput.val());
+            } catch (e) {
+                console.warn('Invalid JSON in non_vic_postcodes_json:', e);
+            }
+        }
+
         postcodeTimer = setTimeout(function () {
+            // Empty - do nothing
+            if (value.length === 0) {
+                parentField.removeClass('is_typing');
+                return;
+            }
 
-            // Check if user entered invalid format (not 4 digits)
-            if (value.length > 0 && (!/^\d{0,4}$/.test(value) || value.length < 4)) {
-                // Show validation error for invalid postcode format
+            // Invalid format (not exactly 4 digits or contains non-digits)
+            if (!/^\d{4}$/.test(value)) {
+                parentField.removeClass('is_typing');
                 parentField.addClass('gfield_error is_invalid');
-
-                if (parentField.find('.validation_message').length === 0) {
-                    const validationText = getCaldText('form_validation_message.validation_postcode', 'Please enter a valid postcode');
-                    parentField.find('.ginput_container').append('<div class="gfield_description validation_message gfield_validation_message">' + escapeHtml(validationText) + '</div>');
-                }
-                return;
-            }
-            // If empty or valid format but not complete, just return without showing error
-            if (value.length < 4) {
+                const validationText = getCaldText('form_validation_message.validation_postcode', 'Please enter a valid postcode');
+                parentField.find('.ginput_container').append(
+                    '<div class="gfield_description validation_message gfield_validation_message">' +
+                    escapeHtml(validationText) +
+                    '</div>'
+                );
                 return;
             }
 
-            // Load acceptable non-VIC postcodes
-            let nonVicPostcodes = [];
-            const nonVicInput = $('#non_vic_postcodes_json');
-            if (nonVicInput.length && nonVicInput.val()) {
-                try {
-                    nonVicPostcodes = JSON.parse(nonVicInput.val());
-                } catch (e) {
-                    console.warn('Invalid JSON in non_vic_postcodes_json:', e);
-                }
-            }
-
+            // Valid format (4 digits) - check if it's in our service area
             const isVicPostcode = /^(3\d{3}|8\d{3})$/.test(value);
             const isAcceptableNonVic = nonVicPostcodes.includes(value);
 
-            // ❌ 4 digits but not valid
-            if (!isVicPostcode && !isAcceptableNonVic) {
+            if (isVicPostcode || isAcceptableNonVic) {
+                // ✅ Valid postcode in service area
+                parentField.removeClass('is_typing');
+                parentField.addClass('is_valid');
+                nextButton.prop('disabled', false);
+                pageFooter.slideDown(200).addClass('active');
+            } else {
+                // ❌ Valid format but not in service area
+                parentField.removeClass('is_typing');
+                parentField.addClass('is_invalid');
                 AcceptableNonVicMess.slideDown(200);
-                parentField.addClass('is_invalid').removeClass('gfield_error is_valid');
-                parentField.find('.ginput_container').find('.validation_message').remove();
-                nextButton.prop('disabled', true);
-                pageFooter.hide().removeClass('active');
-                return;
             }
-
-            // ✅ Valid postcode
-            parentField.addClass('is_valid').removeClass('gfield_error is_invalid');
-            parentField.find('.ginput_container').find('.validation_message').remove();
-            nextButton.prop('disabled', false);
-            pageFooter.slideDown(200).addClass('active');
-            AcceptableNonVicMess.hide();
-
-        }, 500); // debounce time
-    }
-    );
-
+        }, 500);
+    });
 
     // On change event for Full Name field in .life-health-check-form
     $(document).on('change input blur', `form.${lhcFormClass} .gfield.first_name input[type=text], form.${lhcFormClass} .gfield.last_name input[type=text]`, function () {

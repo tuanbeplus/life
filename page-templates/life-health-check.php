@@ -49,10 +49,8 @@ function get_cald_text($key, $default = '') {
                         foreach ($languages as $index => $item): 
                             $item_url = $item['url'] ?? '#';
                             $item_path = ($item_url !== '#') ? wp_make_link_relative($item_url) : '#';
-                            
                             // Remove trailing slashes and query strings for consistent comparison
                             $item_path_clean = rtrim(strtok($item_path, '?'), '/');
-
                             $is_current = ($current_path_clean === $item_path_clean || ($item_url === '#' && $index === 0));
                         ?>
                             <li class="language-item">

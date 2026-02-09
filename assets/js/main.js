@@ -223,15 +223,15 @@ jQuery(function ($) {
         male: {
             atsi: {  // Aboriginal or Torres Strait Islander = Yes
                 ranges: [
-                    { label: { english: 'Less than 90cm', chinese_s: '小于 90 厘米', chinese_t: '小於 90 釐米', arabic: 'أقلىمنىى90ىمسى', vietnamese: 'Dưới 90cm' }, sfValue: 'Less than 90cm' },
-                    { label: { english: '90cm - 100cm', chinese_s: '90至100厘米', chinese_t: '90 至 100 釐米', arabic: 'ىمس100-ى90', vietnamese: '90cm - 100cm' }, sfValue: '90 - 100cm' },
+                    { label: { english: 'Less than 90cm', chinese_s: '小于 90 厘米', chinese_t: '小於 90 釐米', arabic: 'أقل من 90 سم', vietnamese: 'Dưới 90cm' }, sfValue: 'Less than 90cm' },
+                    { label: { english: '90cm - 100cm', chinese_s: '90至100厘米', chinese_t: '90 至 100 釐米', arabic: '90 سم - 100 سم', vietnamese: '90cm - 100cm' }, sfValue: '90 - 100cm' },
                     { label: { english: 'More than 100cm', chinese_s: '超过 100 厘米', chinese_t: '超過 100 釐米', arabic: 'أكثر من 100 سم', vietnamese: 'Hơn 100cm' }, sfValue: 'More than 100cm' }
                 ]
             },
             asia: {  // ATSI = No, Ethnicity = Asia
                 ranges: [
-                    { label: { english: 'Less than 90cm', chinese_s: '小于 90 厘米', chinese_t: '小於 90 釐米', arabic: 'أقلىمنىى90ىمسى', vietnamese: 'Dưới 90cm' }, sfValue: 'Less than 90cm' },
-                    { label: { english: '90cm - 100cm', chinese_s: '90至100厘米', chinese_t: '90 至 100 釐米', arabic: 'ىمس100-ى90', vietnamese: '90cm - 100cm' }, sfValue: '90 - 100cm' },
+                    { label: { english: 'Less than 90cm', chinese_s: '小于 90 厘米', chinese_t: '小於 90 釐米', arabic: 'أقل من 90 سم', vietnamese: 'Dưới 90cm' }, sfValue: 'Less than 90cm' },
+                    { label: { english: '90cm - 100cm', chinese_s: '90至100厘米', chinese_t: '90 至 100 釐米', arabic: '90 سم - 100 سم', vietnamese: '90cm - 100cm' }, sfValue: '90 - 100cm' },
                     { label: { english: 'More than 100cm', chinese_s: '超过 100 厘米', chinese_t: '超過 100 釐米', arabic: 'أكثر من 100 سم', vietnamese: 'Hơn 100cm' }, sfValue: 'More than 100cm' }
                 ]
             },
@@ -247,14 +247,14 @@ jQuery(function ($) {
             atsi: {  // Aboriginal or Torres Strait Islander = Yes
                 ranges: [
                     { label: { english: 'Less than 80cm', chinese_s: '小于 80 厘米', chinese_t: '小於 80 釐米', arabic: 'أقل من 80 سم', vietnamese: 'Dưới 80cm' }, sfValue: 'Less than 80cm' },
-                    { label: { english: '80cm - 90cm', chinese_s: '80至90厘米', chinese_t: '80 至 90 釐米', arabic: '90-80 سم', vietnamese: '80 - 90cm' }, sfValue: '80-90cm' },
+                    { label: { english: '80cm - 90cm', chinese_s: '80至90厘米', chinese_t: '80 至 90 釐米', arabic: '80-90 سم', vietnamese: '80 - 90cm' }, sfValue: '80-90cm' },
                     { label: { english: 'More than 90cm', chinese_s: '超过 90 厘米', chinese_t: '超過 90 釐米', arabic: 'أكثر من 90 سم', vietnamese: 'Hơn 90cm' }, sfValue: 'More than 90cm' }
                 ]
             },
             asia: {  // ATSI = No, Ethnicity = Asia
                 ranges: [
                     { label: { english: 'Less than 80cm', chinese_s: '小于 80 厘米', chinese_t: '小於 80 釐米', arabic: 'أقل من 80 سم', vietnamese: 'Dưới 80cm' }, sfValue: 'Less than 80cm' },
-                    { label: { english: '80cm - 90cm', chinese_s: '80至90厘米', chinese_t: '80 至 90 釐米', arabic: '90-80 سم', vietnamese: '80 - 90cm' }, sfValue: '80-90cm' },
+                    { label: { english: '80cm - 90cm', chinese_s: '80至90厘米', chinese_t: '80 至 90 釐米', arabic: '80-90 سم', vietnamese: '80 - 90cm' }, sfValue: '80-90cm' },
                     { label: { english: 'More than 90cm', chinese_s: '超过 90 厘米', chinese_t: '超過 90 釐米', arabic: 'أكثر من 90 سم', vietnamese: 'Hơn 90cm' }, sfValue: 'More than 90cm' }
                 ]
             },
@@ -407,6 +407,12 @@ jQuery(function ($) {
 
         $(`form.${lhcFormClass} .gfield_radio .gchoice label`).each(function () {
             const $label = $(this);
+
+            let parentField = $label.closest('.gfield');
+
+            if (parentField.hasClass('q9')) {
+                return;
+            }
 
             // Skip if already processed
             if ($label.attr('data-radio-first-char')) return;
@@ -572,7 +578,9 @@ jQuery(function ($) {
 
     // Initial call when document is ready
     if ($('body').hasClass('life-health-check')) {
-        updateRadioButtonLabels();
+        if ($('body').hasClass('en')) {
+            updateRadioButtonLabels();
+        }
         updateSidebarProgressSteps();
         updateQ12OptionsVisibility();
         updateWaistTable(); // Initialize waist table on page load
@@ -676,8 +684,9 @@ jQuery(function ($) {
     // Update on Gravity Forms AJAX events
     $(document).on('gform_confirmation_loaded', function () {
         if ($('body').hasClass('life-health-check')) {
-
-            updateRadioButtonLabels();
+            if ($('body').hasClass('en')) {
+                updateRadioButtonLabels();
+            }
             updateSidebarProgressSteps();
             $(`form.${lhcFormClass}`).removeClass('loading');
             $(`header.top-nav`).addClass('hidden');
@@ -733,7 +742,9 @@ jQuery(function ($) {
     // Update on any AJAX form submission
     $(document).on('gform_post_render', function (event, form_id, current_page) {
         if ($('body').hasClass('life-health-check')) {
-            updateRadioButtonLabels();
+            if ($('body').hasClass('en')) {
+                updateRadioButtonLabels();
+            }
             updateSidebarProgressSteps();
             updateQ12OptionsVisibility();
             updateWaistTable();
@@ -825,7 +836,9 @@ jQuery(function ($) {
     // Update when form is loaded via AJAX
     $(document).on('gform_load_form', function () {
         if ($('body').hasClass('life-health-check')) {
-            updateRadioButtonLabels();
+            if ($('body').hasClass('en')) {
+                updateRadioButtonLabels();
+            }
             updateSidebarProgressSteps();
             updateQ12OptionsVisibility();
             updateWaistTable();
@@ -840,7 +853,9 @@ jQuery(function ($) {
     // Update on field validation
     $(document).on('gform_field_validation', function () {
         if ($('body').hasClass('life-health-check')) {
-            updateRadioButtonLabels();
+            if ($('body').hasClass('en')) {
+                updateRadioButtonLabels();
+            }
             updateSidebarProgressSteps();
             updateQ12OptionsVisibility();
             $(`form.${lhcFormClass}`).addClass('loading');

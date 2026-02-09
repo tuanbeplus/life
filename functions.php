@@ -135,11 +135,13 @@ function life_setup() {
       [
         '#Life\! flex#si',
         '#Life\!#si',
+        '#\!Life#si',
         '#<em>Life\!</em> Online#si',
       ],
       [
         '<i><em>Life!</em> flex</i>',
         '<em>Life!</em>',
+        '<em>!Life</em>',
         '<em>Life! Online</em>',
       ],
       $src

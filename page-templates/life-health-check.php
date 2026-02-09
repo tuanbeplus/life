@@ -86,7 +86,9 @@ function get_cald_text($key, $default = '') {
                 <!-- Contact Information Section -->
                 <div class="get-in-touch field">
                     <p class="contact-text"><?php echo get_cald_text('contact_copy', 'Need help? Call our friendly team on'); ?></p>
-                    <a href="tel:137475" class="phone-number"><span class="phone-digits risk-13-wcag">13 74 75</span></a>
+                    <a href="tel:<?php echo get_cald_text('contact_phone', '13 74 75'); ?>" class="phone-number">
+                        <span class="phone-digits risk-13-wcag"><?php echo get_cald_text('contact_phone', '13 74 75'); ?></span>
+                    </a>
                 </div>
             </div>
             <div class="hc-form-wrapper">

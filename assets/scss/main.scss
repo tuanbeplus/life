@@ -3,10 +3,6 @@ body {
   // Health Check page wrapper
   &.life-health-check {
     &.ar {
-      .hero-banner-sml {
-        direction: rtl;
-        text-align: right;
-      }
       .language-link::before {
         margin-right: 0 !important;
         margin-left: 12px !important;
@@ -24,9 +20,6 @@ body {
         right: unset !important;
       }
       #breadcrumbs ul {
-        flex-direction: row;
-        direction: rtl;
-        text-align: right;
         > li:not(:first-child)::before {
           content: "|";
           display: block;

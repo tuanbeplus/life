@@ -5,7 +5,7 @@
 
 function life_enqueue_main() {
   $theme_dir = get_template_directory_uri();
-  $theme_ver = '2.0.0' . time();
+  $theme_ver = '2.0.1';
   wp_enqueue_style('life-main-css', $theme_dir . '/assets/css/main.css', array(), $theme_ver, 'all');
   wp_enqueue_script('life-main-js', $theme_dir . '/assets/js/main.js', array('jquery'), $theme_ver, true);
   
@@ -283,6 +283,7 @@ function life_ajax_update_lead_details() {
   $first_name = isset($_POST['first_name']) ? sanitize_text_field($_POST['first_name']) : '';
   $last_name = isset($_POST['last_name']) ? sanitize_text_field($_POST['last_name']) : '';
   $postcode = isset($_POST['postcode']) ? sanitize_text_field($_POST['postcode']) : '';
+  $language = isset($_POST['language']) ? sanitize_text_field($_POST['language']) : '';
 
   // Validate email
   if (empty($email) || !is_email($email)) {
@@ -312,6 +313,13 @@ function life_ajax_update_lead_details() {
     ]);
     return;
   }
+  // Validate language
+  if (empty($language)) {
+    wp_send_json_error([
+      'message' => 'Language is required. Please enter a valid language.'
+    ]);
+    return;
+  }
 
   // Check if Lead already exists in Salesforce - FAST RESPONSE THEN PROCESS
   
@@ -323,11 +331,12 @@ function life_ajax_update_lead_details() {
     'first_name' => $first_name,
     'last_name' => $last_name,
     'postcode' => $postcode,
+    'language' => $language,
   ]);
 
   // --- HEAVY PROCESSING STARTS HERE ---
   // Any output from here on will be ignored by the client
-  life_handle_lead_details_update($email, $first_name, $last_name, $postcode);
+  life_handle_lead_details_update($email, $first_name, $last_name, $postcode, $language);
   
   exit; // Ensure WP doesn't append '0'
 }
@@ -335,7 +344,7 @@ function life_ajax_update_lead_details() {
 /**
  * Helper handler for Lead Details Update
  */
-function life_handle_lead_details_update($email, $first_name, $last_name, $postcode) {
+function life_handle_lead_details_update($email, $first_name, $last_name, $postcode, $language = '') {
     if (!function_exists('\SfFuncs\queryLeadByEmail') || !function_exists('\SfFuncs\updateLeadById') || !function_exists('\SfFuncs\postDataToSalesforce')) {
         error_log('Salesforce functions not available for details update.');
         return ['error' => 'SF functions missing'];
@@ -353,6 +362,7 @@ function life_handle_lead_details_update($email, $first_name, $last_name, $postc
       'Status'                           => 'No Score',
       'User_Status_Detail__c'            => 'Warm',
       'CONSENT_TO_OBTAIN_INFORMATION__c' => true,
+      'AUSDRISK_Test_language__c'        => $language,
     ];
 
     // Determine if we should UPDATE or INSERT
@@ -431,7 +441,6 @@ function life_process_gform_submission_salesforce_sync($entry, $form) {
   // Map Salesforce fields using Gravity Forms field CSS classes
   $field_mapping_by_class = [
     // 'salesforce_field_name' => 'css_class_name',
-    'AUSDRISK_Test_language__c' => 'AUSDRISK_Test_language__c',
     'Gender__c' => 'Gender__c',
     'AUSDRISK_Q1_Age_Group__c' => 'AUSDRISK_Q1_Age_Group__c',
     'Q3_ATSI_Status__c' => 'Q3_ATSI_Status__c',

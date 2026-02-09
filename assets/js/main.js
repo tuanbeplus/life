@@ -19,9 +19,6 @@ jQuery(function ($) {
     const introPage = hcForm.find('.gform_page.intro');
     const detailsPage = hcForm.find('.gform_page.details');
     const questionsPage = hcForm.find('.gform_page.questions');
-    const introNextButton = introPage.find('.gform_next_button');
-    const detailsNextButton = detailsPage.find('.gform_next_button');
-    const hcSubmitButton = hcForm.find('.gform_button[type="submit"]');
     const shareBtnText = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.shareBtnText) ? lifeHealthCheck.shareBtnText : "Share health check with a friend or family";
 
     const livingWithDiabetesField = introPage.find('.gfield.living_with_diabetes');
@@ -1236,17 +1233,25 @@ jQuery(function ($) {
     });
 
     let hasConfirmedHC = false;
+    let detailsNextClickCount = 0;
     // On change event for radio fields
     $(document).on('click', `form.${lhcFormClass} .gform_page.details .gform_next_button`, function () {
-
         const $detailsPage = $(this).closest(`.gform_page.details`);
         // Early return if not on visible details page
         if (!$detailsPage.length) return;
+
+        // If preLeadData has data, skip the first click
+        if (preLeadData && preLeadData.Status && detailsNextClickCount === 0) {
+            detailsNextClickCount++;
+            return;
+        }
+        detailsNextClickCount++;
 
         const $firstName = $detailsPage.find('.gfield.first_name input[type=text]').val();
         const $lastName = $detailsPage.find('.gfield.last_name input[type=text]').val();
         const $email = $detailsPage.find('.gfield.email input[type=email]').val();
         const $postCode = $(`form.${lhcFormClass} .gfield.postcode input[type=number]`).val();
+        const $language = $detailsPage.find('.gfield.language input[type=text]').val();
 
         // Submit via AJAX
         $.ajax({
@@ -1258,7 +1263,8 @@ jQuery(function ($) {
                 email: $email,
                 first_name: $firstName,
                 last_name: $lastName,
-                postcode: $postCode
+                postcode: $postCode,
+                language: $language
             },
             success: function (response) {
                 if (response.success) {

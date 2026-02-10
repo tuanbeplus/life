@@ -453,12 +453,6 @@ function life_process_gform_submission_salesforce_sync($entry, $form) {
     'AUSDRISK_Q9_2_5_Hrs_Exercise_A_Week__c' => 'AUSDRISK_Q9_2_5_Hrs_Exercise_A_Week__c',
     'Q10a_Waist_Asian_or_Aboriginal__c' => 'Q10a_Waist_Asian_or_Aboriginal__c',
     'AUSDRISK_Q10_b_Waist_Measurement__c' => 'AUSDRISK_Q10_b_Waist_Measurement__c',
-    'History_of_CVD__c' => 'History_of_CVD__c',
-    'Had_GDM__c' => 'Had_GDM__c',
-    'Moderate_Severe_Chronic_Kidney_Disease__c' => 'Moderate_Severe_Chronic_Kidney_Disease__c',
-    'Polycystic_ovary_syndrome__c' => 'Polycystic_ovary_syndrome__c',
-    'Serum_total_cholesterol_7_5mmol_L__c' => 'Serum_total_cholesterol_7_5mmol_L__c',
-    'Impaired_glucose_tolerance__c' => 'Impaired_glucose_tolerance__c',
   ];
   
   // Static Salesforce field values (applied to ALL updates)
@@ -576,8 +570,8 @@ function life_process_gform_submission_salesforce_sync($entry, $form) {
     $field_classes = isset($field->cssClass) ? explode(' ', $field->cssClass) : [];
     $field_value = isset($entry[$field->id]) ? trim($entry[$field->id]) : '';
     
-    // Skip if field has no value
-    if ($field_value === '') {
+    // Skip if field has no value (but not checkbox fields, their values are in sub-inputs)
+    if ($field_value === '' && $field->type !== 'checkbox') {
       continue;
     }
     // Example: Map AUSDRISK_Results_Ineligible field to Status
@@ -587,6 +581,7 @@ function life_process_gform_submission_salesforce_sync($entry, $form) {
         $sf_data['User_Status_Detail__c'] = 'Cold';
       }
     }
+
     // Example: Map AUSDRISK_Results_Eligible field to Status
     if (in_array('AUSDRISK_Results_Eligible', $field_classes)) {
       if ( !empty($field_value) ) {
@@ -594,21 +589,54 @@ function life_process_gform_submission_salesforce_sync($entry, $form) {
         $sf_data['User_Status_Detail__c'] = 'Hot';
       }
     }
-    if (in_array('History_of_CVD__c', $field_classes)) {
-      if ( !empty($field_value) ) {
+
+    if (in_array('q12', $field_classes) && $field->type === 'checkbox') {
+      // Checkbox fields store values in sub-inputs (field_id.1, field_id.2, etc.)
+      $has_checked_value = false;
+
+      foreach ($field->inputs as $input) {
+        $input_value = isset($entry[$input['id']]) ? trim($entry[$input['id']]) : '';
+
+        if (empty($input_value) || $input_value === 'None') {
+          continue;
+        }
+
+        $has_checked_value = true;
+
+        if ($input_value === 'Heart disease or stroke') {
+          $sf_data['History_of_CVD__c'] = 'Yes';
+        }
+        if ($input_value === 'Gestational Diabetes') {
+          $sf_data['Had_GDM__c'] = 'Yes';
+        }
+        if ($input_value === 'High kidney disease') {
+          $sf_data['Moderate_Severe_Chronic_Kidney_Disease__c'] = true;
+        }
+        if ($input_value === 'High blood pressure') {
+          $sf_data['Systolic_BP_180mmHg_diastolic_BP_110__c'] = true;
+        }
+        if ($input_value === 'Polycystic ovarian syndrome') {
+          $sf_data['Polycystic_ovary_syndrome__c'] = true;
+        }
+        if ($input_value === 'Prediabetes') {
+          $sf_data['Impaired_glucose_tolerance__c'] = true;
+        }
+        if ($input_value === 'High cholesterol') {
+          $sf_data['Serum_total_cholesterol_7_5mmol_L__c'] = true;
+        }
+      }
+
+      if ($has_checked_value) {
         $sf_data['I_can_provide_evidence_for_CVD_GDM_FH__c'] = true;
       }
     }
-    if (in_array('Had_GDM__c', $field_classes)) {
-      if ( !empty($field_value) ) {
-        $sf_data['I_can_provide_evidence_for_CVD_GDM_FH__c'] = true;
-      }
-    }
+    
     if (in_array('Q10a_Waist_Asian_or_Aboriginal__c', $field_classes)) {
       if ( !empty($field_value) ) {
         $sf_data['AUSDRISK_Q10_b_Waist_Measurement__c'] = '';
       }
     }
+
     if (in_array('AUSDRISK_Q10_b_Waist_Measurement__c', $field_classes)) {
       if ( !empty($field_value) ) {
         $sf_data['Q10a_Waist_Asian_or_Aboriginal__c'] = '';

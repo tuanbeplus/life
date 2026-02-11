@@ -609,7 +609,7 @@ function life_process_gform_submission_salesforce_sync($entry, $form) {
         if ($input_value === 'Gestational Diabetes') {
           $sf_data['Had_GDM__c'] = 'Yes';
         }
-        if ($input_value === 'High kidney disease') {
+        if ($input_value === 'Chronic kidney disease') {
           $sf_data['Moderate_Severe_Chronic_Kidney_Disease__c'] = true;
         }
         if ($input_value === 'High blood pressure') {

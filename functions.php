@@ -938,3 +938,57 @@ function pageIsPcos() {
   }
   return $isPage;
 }
+
+function life_handle_acf_migration() {
+  if ( !current_user_can('administrator') ) {
+    return;
+  }
+
+  $action = $_GET['life_act'] ?? null;
+  $post_id = $_GET['post_id'] ?? null;
+
+  if ( !$action || !$post_id ) {
+    return;
+  }
+
+  if ( $action === 'export_acf' ) {
+    $fields = get_fields($post_id, false); // false = format_value: false (raw DB value)
+    
+    header('Content-Type: application/json');
+    echo json_encode($fields, JSON_PRETTY_PRINT);
+    exit;
+  }
+
+  if ( $action === 'import_acf' ) {
+    if ( $_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['acf_data']) ) {
+      $data = json_decode(stripslashes($_POST['acf_data']), true);
+      
+      if ( json_last_error() === JSON_ERROR_NONE && is_array($data) ) {
+        foreach ( $data as $key => $value ) {
+          update_field($key, $value, $post_id);
+        }
+        echo '<div style="color: green; padding: 20px;">Successfully imported ' . count($data) . ' fields for Post ID: ' . $post_id . '</div>';
+      } else {
+         echo '<div style="color: red; padding: 20px;">Invalid JSON data. Error: ' . json_last_error_msg() . '</div>';
+      }
+    }
+
+    // Show Import Form
+    ?>
+    <!DOCTYPE html>
+    <html>
+    <head><title>Import ACF Data</title></head>
+    <body style="font-family: sans-serif; padding: 50px;">
+      <h1>Import ACF Data for Post ID: <?php echo esc_html($post_id); ?></h1>
+      <form method="post">
+        <textarea name="acf_data" rows="20" cols="100" placeholder="Paste JSON here..."></textarea>
+        <br><br>
+        <button type="submit" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">Import Data</button>
+      </form>
+    </body>
+    </html>
+    <?php
+    exit;
+  }
+}
+add_action('init', 'life_handle_acf_migration');

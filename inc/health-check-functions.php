@@ -5,7 +5,7 @@
 
 function life_enqueue_main() {
   $theme_dir = get_template_directory_uri();
-  $theme_ver = '2.0.3';
+  $theme_ver = '2.0.4';
   wp_enqueue_style('life-main-css', $theme_dir . '/assets/css/main.css', array(), $theme_ver, 'all');
   wp_enqueue_script('life-main-js', $theme_dir . '/assets/js/main.js', array('jquery'), $theme_ver, true);
   
@@ -284,6 +284,7 @@ function life_ajax_update_lead_details() {
   $last_name = isset($_POST['last_name']) ? sanitize_text_field($_POST['last_name']) : '';
   $postcode = isset($_POST['postcode']) ? sanitize_text_field($_POST['postcode']) : '';
   $language = isset($_POST['language']) ? sanitize_text_field($_POST['language']) : '';
+  $utm_source_url = isset($_POST['utm_source_url']) ? esc_url_raw($_POST['utm_source_url']) : '';
 
   // Validate email
   if (empty($email) || !is_email($email)) {
@@ -336,7 +337,7 @@ function life_ajax_update_lead_details() {
 
   // --- HEAVY PROCESSING STARTS HERE ---
   // Any output from here on will be ignored by the client
-  life_handle_lead_details_update($email, $first_name, $last_name, $postcode, $language);
+  life_handle_lead_details_update($email, $first_name, $last_name, $postcode, $language, $utm_source_url);
   
   exit; // Ensure WP doesn't append '0'
 }
@@ -344,7 +345,7 @@ function life_ajax_update_lead_details() {
 /**
  * Helper handler for Lead Details Update
  */
-function life_handle_lead_details_update($email, $first_name, $last_name, $postcode, $language = '') {
+function life_handle_lead_details_update($email, $first_name, $last_name, $postcode, $language = '', $utm_source_url = '') {
     if (!function_exists('\SfFuncs\queryLeadByEmail') || !function_exists('\SfFuncs\updateLeadById') || !function_exists('\SfFuncs\postDataToSalesforce')) {
         error_log('Salesforce functions not available for details update.');
         return ['error' => 'SF functions missing'];
@@ -364,6 +365,11 @@ function life_handle_lead_details_update($email, $first_name, $last_name, $postc
       'CONSENT_TO_OBTAIN_INFORMATION__c' => true,
       'AUSDRISK_Test_language__c'        => $language,
     ];
+
+    // Include UTM source URL if available (for both UPDATE and INSERT)
+    if (!empty($utm_source_url)) {
+        $sf_data['URL_source__c'] = $utm_source_url;
+    }
 
     // Determine if we should UPDATE or INSERT
     // We update if a lead exists AND it hasn't reached "EOI received" status

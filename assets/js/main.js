@@ -1232,6 +1232,16 @@ jQuery(function ($) {
         hasStartedHC = true;
     });
 
+    // Save UTM source URL to sessionStorage if URL has UTM parameters
+    function saveUtmSourceUrl() {
+        const params = new URLSearchParams(window.location.search);
+        const utmKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
+        if (utmKeys.some(key => params.has(key))) {
+            sessionStorage.setItem('utmSourceUrl', window.location.href);
+        }
+    }
+    saveUtmSourceUrl();
+
     let hasConfirmedHC = false;
     let detailsNextClickCount = 0;
     // On change event for radio fields
@@ -1252,6 +1262,7 @@ jQuery(function ($) {
         const $email = $detailsPage.find('.gfield.email input[type=email]').val();
         const $postCode = $(`form.${lhcFormClass} .gfield.postcode input[type=number]`).val();
         const $language = $detailsPage.find('.gfield.language input[type=text]').val();
+        const $utmSourceUrl = sessionStorage.getItem('utmSourceUrl') || '';
 
         // Submit via AJAX
         $.ajax({
@@ -1264,11 +1275,13 @@ jQuery(function ($) {
                 first_name: $firstName,
                 last_name: $lastName,
                 postcode: $postCode,
-                language: $language
+                language: $language,
+                utm_source_url: $utmSourceUrl
             },
             success: function (response) {
                 if (response.success) {
-                    // console.log('Lead inserted/updated successfully:', response);
+                    // Clear UTM after successful submission
+                    sessionStorage.removeItem('utmSourceUrl');
                 } else {
                     // Salesforce validation error or other error
                     console.error('Lead insertion failed:', response);

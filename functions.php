@@ -992,3 +992,15 @@ function life_handle_acf_migration() {
   }
 }
 add_action('init', 'life_handle_acf_migration');
+
+/**
+ * Disable canonical redirect for health-check to preserve UTM parameters 
+ * that might be stripped by the server cache during a 301 trailing slash redirect.
+ */
+add_filter( 'redirect_canonical', 'life_disable_redirect_for_health_check', 10, 2 );
+function life_disable_redirect_for_health_check( $redirect_url, $requested_url ) {
+  if ( is_page_template( 'page-templates/life-health-check.php' ) ) {
+    return false;
+  }
+  return $redirect_url;
+}

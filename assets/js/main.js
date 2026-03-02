@@ -11,7 +11,11 @@ jQuery(function ($) {
     const trackingEventPrefix = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.trackingEventPrefix) ? lifeHealthCheck.trackingEventPrefix : "English";
     const submitLoadingText = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.submitLoadingText) ? lifeHealthCheck.submitLoadingText : "Submitting...";
     const submitButtonText = (typeof lifeHealthCheck !== 'undefined' && lifeHealthCheck.submitButtonText) ? lifeHealthCheck.submitButtonText : "Take the next step";
-    const preLeadData = JSON.parse($('#pre_lead_data').val()) || {};
+    let preLeadData = '';
+    if ($('#pre_lead_data').length) {
+        preLeadData = JSON.parse($('#pre_lead_data').val()) || {};
+    }
+
     const hcMainSection = $('body.life-health-check .health-check-section');
     const hcFormSidebar = hcMainSection.find('.sidebar');
     const hcFormWrapper = hcMainSection.find('.hc-form-wrapper');

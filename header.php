@@ -113,7 +113,6 @@ wp_reset_postdata();
           if (!link) return;
 
           if (
-            link.target === "_blank" ||
             link.hasAttribute("download") ||
             link.hasAttribute("data-no-redirect")
           ) {

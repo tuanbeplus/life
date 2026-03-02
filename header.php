@@ -119,6 +119,11 @@ wp_reset_postdata();
             return;
           }
 
+          if (link.target === "_blank") {
+            window.open(link.href, "_blank");
+            return;
+          }
+
           var href = link.getAttribute("href");
           if (!href) return;
 

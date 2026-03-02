@@ -42,7 +42,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import SvgIconTimesBold from '~/svg/ui/IconTimesBold.vue'
-import useHealthCheck from '#/useHealthCheck.js'
+// import useHealthCheck from '#/useHealthCheck.js' // Disabled — redirecting to Gravity Forms page instead
 
 const props = defineProps({
   lang: {
@@ -54,7 +54,17 @@ const props = defineProps({
     required: true,
   },
 })
-const { healthCheck } = useHealthCheck()
+// const { healthCheck } = useHealthCheck() // Disabled — redirecting to Gravity Forms page instead
+
+// Map languages to Gravity Forms health check page URLs
+const langUrlMap = {
+  'en': '/health-check/',
+  'ar': '/health-check/arabic/',
+  'vi': '/health-check/vietnamese/',
+  'zh-Hans': '/health-check/chinese-simplified/',
+  'zh-Hant': '/health-check/chinese-traditional/',
+  'zh': '/health-check/chinese-simplified/',
+}
 
 const minimized = ref(false)
 const inTransition = ref(false)
@@ -71,7 +81,10 @@ const toggle = () => {
 }
 
 const trigger = (lang) => {
-  healthCheck(lang).open()
+  // Redirect to the Gravity Forms health check page instead of opening the Vue modal
+  const url = langUrlMap[lang] || '/health-check/'
+  const qs = window.location.search || ''
+  window.location.href = url + qs
 }
 
 onMounted(() => {

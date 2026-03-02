@@ -1,6 +1,6 @@
 import { createApp } from 'vue/dist/vue.esm-bundler.js';
 import './css/app.css'
-import useHealthCheck from '#/useHealthCheck.js'
+// import useHealthCheck from '#/useHealthCheck.js' // Disabled — using Gravity Forms page instead
 import useUtils from '#/useUtils.js'
 
 import SvgLogoPrimary from '~/svg/logo/LogoPrimary.vue'
@@ -33,7 +33,7 @@ import HealthCheckTrigger from '~/widget/modal-triggers/HealthCheckTrigger.vue'
 import ContactTriggerPcos from '~/widget/modal-triggers/ContactTriggerPcos.vue'
 import ContactTriggerGestational from '~/widget/modal-triggers/ContactTriggerGestational.vue'
 
-import HealthCheck from '~/modals/HealthCheck.vue'
+// import HealthCheck from '~/modals/HealthCheck.vue' // Disabled — using Gravity Forms page instead
 import ContactModalPcos from '~/modals/ContactModalPcos.vue'
 import ContactModalGestational from '~/modals/ContactModalGestational.vue'
 import ContactModalFacilitatorEoi from '~/modals/ContactModalFacilitatorEoi.vue'
@@ -59,11 +59,11 @@ import SubscribeForm from '~/contact-forms/SubscribeForm.vue'
 
 import SingleAccordion from '~/deprecate/SingleAccordion.vue'
 
-const { healthCheck, healthCheckTriggers } = useHealthCheck()
+// const { healthCheck, healthCheckTriggers } = useHealthCheck() // Disabled — using Gravity Forms page instead
 const { eListen } = useUtils()
 
 document.addEventListener('DOMContentLoaded', () => {
-  
+
   const appEl = document.getElementById('app')
   // console.log('appEl', appEl)
   const app = createApp({
@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
       SvgIconGlobe,
       SvgIconDocument,
       SvgChevDown,
-  
+
       ContentTabs,
       ContentTabsTabs,
       ContentGiantTabs,
@@ -93,12 +93,12 @@ document.addEventListener('DOMContentLoaded', () => {
       AjaxForm,
       FooterNavAccordion,
       SlideInBlock,
-  
+
       HealthCheckTrigger,
       ContactTriggerPcos,
       ContactTriggerGestational,
-  
-      HealthCheck,
+
+      // HealthCheck, // Disabled — using Gravity Forms page instead
       ContactModalPcos,
       ContactModalGestational,
       ContactModalFacilitatorEoi,
@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
       TopNavLangSelector,
       MobileNav,
       MobileMenuToggler,
-  
+
       BlogIndexTabbed,
       VideoSlideshow,
       TestimonialsSlideshow,
@@ -140,6 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         lastScrollTop = scrollTop
       });
+      /* Disabled — hash links now handled by header.php redirect to Gravity Forms pages
       healthCheckTriggers.forEach(trigger => {
         eListen({
           selector: `a[href$="#${trigger.frag}"]`,
@@ -152,6 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
           healthCheck(trigger.lang).open()
         }
       })
+      */
       // find iframes inside of appEl
       const iframes = appEl.querySelectorAll('iframe')
       if (iframes.length > 0) {
@@ -165,8 +167,8 @@ document.addEventListener('DOMContentLoaded', () => {
     },
   })
   // console.log('app', app)
-  
-  
+
+
   app.mount(appEl)
 });
 

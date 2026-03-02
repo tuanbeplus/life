@@ -1,10 +1,6 @@
 
         <?= (defined('FOOTER_CTA_BANNER_2024') && FOOTER_CTA_BANNER_2024) ? incTemplate('footer/footer-cta-banner') : incTemplate('block-newsletter-signup') ?>
         <?= incTemplate('footer/page-footer') ?>
-        <health-check
-          default-lang="<?= pageLang()->lang ?>"
-          template-directory-uri="<?= get_template_directory_uri() ?>"
-        ></health-check>
         <?php if (pageIsPcos()): ?>
           <contact-modal-pcos></contact-modal-pcos>
         <?php elseif (pageIsGestational()): ?>

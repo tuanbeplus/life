@@ -241,26 +241,36 @@ function life_handle_resend_gform_notifications($entry_id, $form_id) {
  */
 function life_handle_lead_eoi_update($email, $phone, $ausdrisk_result, $comfor_eng = '') {
     if (!function_exists('\SfFuncs\queryLeadByEmail')) {
-        return; 
+        error_log('Life EOI Update: Salesforce functions not available.');
+        return ['error' => 'SF functions missing'];
     }
 
     $lead = \SfFuncs\queryLeadByEmail($email);
     
-    if ($lead && isset($lead['Id'])) {
-      // Prepare data for update (Phone field in Salesforce)
-      $sf_data = [
-        'Phone' => $phone,
-        'MobilePhone' => $phone,
-        'Status' => $ausdrisk_result,
-        'User_Status_Detail__c' => '',
-        'Comfortable_speaking_English__c' => $comfor_eng,
-      ];
-      
-      // Update Lead in Salesforce
-      if (function_exists('\SfFuncs\updateLeadById')) {
-        \SfFuncs\updateLeadById($lead['Id'], $sf_data);
+    if (!$lead || !isset($lead['Id'])) {
+      error_log('Life EOI Update: No active Lead found for email ' . $email);
+      return ['error' => 'No active Lead found for email ' . $email];
+    }
+
+    // Prepare data for update (Phone field in Salesforce)
+    $sf_data = [
+      'Phone' => $phone,
+      'MobilePhone' => $phone,
+      'Status' => $ausdrisk_result,
+      'User_Status_Detail__c' => '',
+      'Comfortable_speaking_English__c' => $comfor_eng,
+    ];
+    
+    // Update Lead in Salesforce
+    if (function_exists('\SfFuncs\updateLeadById')) {
+      $errors = \SfFuncs\updateLeadById($lead['Id'], $sf_data);
+      if (!empty($errors)) {
+        error_log('Life EOI Update Error (' . $email . '): ' . print_r($errors, true));
+        return $errors;
       }
     }
+
+    return [];
 }
 
 /**
@@ -322,24 +332,25 @@ function life_ajax_update_lead_details() {
     return;
   }
 
-  // Check if Lead already exists in Salesforce - FAST RESPONSE THEN PROCESS
-  
-  // Return success immediately
-  life_fast_response([
-    'message' => 'Lead update received.',
-    'action' => 'processing',
+  // Process Salesforce Lead update/insert BEFORE responding to client
+  $sf_errors = life_handle_lead_details_update($email, $first_name, $last_name, $postcode, $language, $utm_source_url);
+
+  if (!empty($sf_errors)) {
+    wp_send_json_error([
+      'message' => 'Failed to update Salesforce Lead.',
+      'errors' => $sf_errors,
+    ]);
+    return;
+  }
+
+  wp_send_json_success([
+    'message' => 'Lead updated successfully.',
     'email' => $email,
     'first_name' => $first_name,
     'last_name' => $last_name,
     'postcode' => $postcode,
     'language' => $language,
   ]);
-
-  // --- HEAVY PROCESSING STARTS HERE ---
-  // Any output from here on will be ignored by the client
-  life_handle_lead_details_update($email, $first_name, $last_name, $postcode, $language, $utm_source_url);
-  
-  exit; // Ensure WP doesn't append '0'
 }
 
 /**

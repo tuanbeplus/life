@@ -528,7 +528,7 @@ function life_process_gform_submission_salesforce_sync($entry, $form) {
   // If Lead doesn't exist OR it's already "EOI received"/"No EOI", 
   // we must NOT update it directly. Instead, we should create a new record.
   // This handles cases where Step 1 failed to create a new record.
-  $is_finished_lead = ($sf_lead_status === 'EOI received' || $sf_lead_status === 'No EOI');
+  $is_finished_lead = ($sf_lead_status === 'EOI received' || $sf_lead_status === 'Waiting for Eligibility' || $sf_lead_status === 'Converted');
   if (empty($sf_lead_id) || $is_finished_lead) {
       if ($is_finished_lead) {
           error_log('Life GForm to SF: Lead ' . $sf_lead_id . ' is already "' . $sf_lead_status . '". Creating NEW lead instead of updating. (Entry ID: ' . $entry['id'] . ')');
@@ -548,6 +548,7 @@ function life_process_gform_submission_salesforce_sync($entry, $form) {
           'LeadSource'            => 'Web Request',
           'Status'                => 'No Score',
           'User_Status_Detail__c' => 'Warm',
+          'AUSDRISK_Test_language__c' => '',
       ];
 
       // Try to find Name and Postcode in the entries to make the new lead more complete
@@ -559,6 +560,7 @@ function life_process_gform_submission_salesforce_sync($entry, $form) {
           if (in_array('first_name', $field_classes)) $insert_data['FirstName'] = sanitize_text_field($val);
           if (in_array('last_name', $field_classes)) $insert_data['LastName'] = sanitize_text_field($val);
           if (in_array('postcode', $field_classes)) $insert_data['PostalCode'] = sanitize_text_field($val);
+          if (in_array('language', $field_classes)) $insert_data['AUSDRISK_Test_language__c'] = sanitize_text_field($val);
       }
 
       // Create the lead

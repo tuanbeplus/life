@@ -210,12 +210,6 @@ function queryLeadByEmail($email) {
     return false;
 }
 
-if ($_GET['test'] == 'test') {
-    echo '<pre>';
-    print_r(queryLeadByEmail('glennyruss@gmail.com'));
-    echo '</pre>';
-}
-
 /**
  * Get Lead by ID
  *

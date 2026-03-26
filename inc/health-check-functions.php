@@ -5,7 +5,7 @@
 
 function life_enqueue_main() {
   $theme_dir = get_template_directory_uri();
-  $theme_ver = '2.0.6';
+  $theme_ver = '2.0.7';
   wp_enqueue_style('life-main-css', $theme_dir . '/assets/css/main.css', array(), $theme_ver, 'all');
   wp_enqueue_script('life-main-js', $theme_dir . '/assets/js/main.js', array('jquery'), $theme_ver, true);
   
@@ -363,8 +363,8 @@ function life_handle_lead_details_update($email, $first_name, $last_name, $postc
     }
 
     $existing_lead = \SfFuncs\queryLeadByEmail($email);
-    $sf_lead_id = $existing_lead['Id'] ?? '';
-    $sf_lead_status = $existing_lead['Status'] ?? '';
+    $sf_lead_id = isset($existing_lead['Id']) && !empty($existing_lead['Id']) ? $existing_lead['Id'] : '';
+    $sf_lead_status = isset($existing_lead['Status']) && !empty($existing_lead['Status']) ? trim($existing_lead['Status']) : '';
 
     // Prepare Base Salesforce Data
     $sf_data = [
@@ -383,15 +383,15 @@ function life_handle_lead_details_update($email, $first_name, $last_name, $postc
     }
 
     // Determine if we should UPDATE or INSERT
-    // We update if a lead exists AND it hasn't reached "EOI received" status
-    $should_update = (!empty($sf_lead_id) && $sf_lead_status !== 'EOI received');
+    // We update if a lead exists AND it hasn't reached "EOI received" or "No EOI" status
     $errors = [];
+    $no_update_lead_status = ['EOI received', 'Waiting for Eligibility', 'Converted'];
 
-    if ($should_update) {
+    if (!empty($sf_lead_id) && !in_array($sf_lead_status, $no_update_lead_status)) {
         // --- UPDATE LOGIC ---
-        if ($sf_lead_status === 'No EOI' || $sf_lead_status === 'Waiting for Eligibility') {
-            $sf_data['Status'] = 'No EOI';
-            $sf_data['User_Status_Detail__c'] = 'Hot';
+        if ($sf_lead_status == 'No EOI') {
+          $sf_data['Status'] = 'No EOI';
+          $sf_data['User_Status_Detail__c'] = 'Hot';
         }
 
         $errors = \SfFuncs\updateLeadById($sf_lead_id, $sf_data);
@@ -521,10 +521,59 @@ function life_process_gform_submission_salesforce_sync($entry, $form) {
   
   $lead = \SfFuncs\queryLeadByEmail($email);
   
-  // If Lead doesn't exist, log and return
-  if (!$lead || !isset($lead['Id'])) {
-    error_log('Life GForm to SF: No Lead found for email ' . $email . ' (Entry ID: ' . $entry['id'] . ')');
-    return;
+  // If Lead exists, check its status to avoid overwriting "finished" records
+  $sf_lead_id = $lead['Id'] ?? '';
+  $sf_lead_status = trim($lead['Status'] ?? '');
+
+  // If Lead doesn't exist OR it's already "EOI received"/"No EOI", 
+  // we must NOT update it directly. Instead, we should create a new record.
+  // This handles cases where Step 1 failed to create a new record.
+  $is_finished_lead = ($sf_lead_status === 'EOI received' || $sf_lead_status === 'No EOI');
+  if (empty($sf_lead_id) || $is_finished_lead) {
+      if ($is_finished_lead) {
+          error_log('Life GForm to SF: Lead ' . $sf_lead_id . ' is already "' . $sf_lead_status . '". Creating NEW lead instead of updating. (Entry ID: ' . $entry['id'] . ')');
+      } else {
+          error_log('Life GForm to SF: No Lead found for email ' . $email . '. Creating NEW lead. (Entry ID: ' . $entry['id'] . ')');
+      }
+      
+      // Fallback: Create a new lead record instead of updating
+      // We'll prepare basic data for insertion
+      $insert_data = [
+          'RecordTypeId'          => '01290000000sizUAAQ',
+          'FirstName'             => '', // Fallback, will try to map below
+          'LastName'              => 'Unknown', // Required field fallback
+          'Email'                 => $email,
+          'History_of_CVD__c'     => 'No',
+          'Had_GDM__c'            => 'No',
+          'LeadSource'            => 'Web Request',
+          'Status'                => 'No Score',
+          'User_Status_Detail__c' => 'Warm',
+      ];
+
+      // Try to find Name and Postcode in the entries to make the new lead more complete
+      foreach ($form['fields'] as $field) {
+          $field_classes = isset($field->cssClass) ? explode(' ', $field->cssClass) : [];
+          $val = isset($entry[$field->id]) ? trim($entry[$field->id]) : '';
+          if (empty($val)) continue;
+
+          if (in_array('first_name', $field_classes)) $insert_data['FirstName'] = sanitize_text_field($val);
+          if (in_array('last_name', $field_classes)) $insert_data['LastName'] = sanitize_text_field($val);
+          if (in_array('postcode', $field_classes)) $insert_data['PostalCode'] = sanitize_text_field($val);
+      }
+
+      // Create the lead
+      if (function_exists('\\SfFuncs\\postDataToSalesforce')) {
+          $insert_errors = \SfFuncs\postDataToSalesforce($insert_data);
+          if (empty($insert_errors)) {
+              // Now query again to get the NEW lead ID for subsequent field updates
+              $lead = \SfFuncs\queryLeadByEmail($email);
+          } else {
+              error_log('Life GForm to SF: Failed to create fallback lead: ' . print_r($insert_errors, true));
+              return;
+          }
+      } else {
+          return;
+      }
   }
   
   // ============================================

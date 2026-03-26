@@ -770,29 +770,37 @@ jQuery(function ($) {
             smoothScrollTo(Math.max(hcFormWrapper.offset().top - 220, 0), 300);
 
             const wrapper = document.getElementById(`gform_wrapper_${lhcFormId}`);
-            if (!wrapper) return;
-
-            // Show spinner immediately
-            hcFormWrapper.find('#loading-spinner').show();
-
-            // Field pre-filling as a fallback
-            livingWithDiabetesField.find('input[type="radio"][value="No"]').prop('checked', true);
-            postCodeField.find('input[type="number"]').val(0).val(preLeadData.PostalCode).focus().blur();
-            confirmContactField.find('input[type="checkbox"]').prop('checked', true);
-            firstNameField.find('input[type="text"]').val(preLeadData.FirstName).focus().blur();
-            lastNameField.find('input[type="text"]').val(preLeadData.LastName).focus().blur();
-            emailField.find('input[type="email"]').val(preLeadData.Email).focus().blur();
-
-            if (current_page >= 3) {
-                wrapper.classList.add('auto-paging');
-                hcFormWrapper.find('#loading-spinner').remove();
+            if (!wrapper) {
                 return;
             }
 
-            if (wrapper.dataset.autoPaging === '1' || wrapper.classList.contains('auto-paging')) return;
+            // Show spinner immediately
+            hcMainSection.find('#loading-spinner').show();
+
+            // Field pre-filling as a fallback
+            if (livingWithDiabetesField.length) livingWithDiabetesField.find('input[type="radio"][value="No"]').prop('checked', true);
+            if (postCodeField.length) postCodeField.find('input[type="number"]').val(0).val(preLeadData.PostalCode).focus().blur();
+            if (confirmContactField.length) confirmContactField.find('input[type="checkbox"]').prop('checked', true);
+            if (firstNameField.length) firstNameField.find('input[type="text"]').val(preLeadData.FirstName).focus().blur();
+            if (lastNameField.length) lastNameField.find('input[type="text"]').val(preLeadData.LastName).focus().blur();
+            if (emailField.length) emailField.find('input[type="email"]').val(preLeadData.Email).focus().blur();
+
+            // Target page for pre-filled leads is the questions (usually page 3)
+            if (current_page >= 3) {
+                wrapper.classList.add('auto-paging');
+                hcMainSection.find('#loading-spinner').hide().remove();
+                return;
+            }
+
+            // Avoid double-triggering
+            if (wrapper.dataset.autoPaging === '1' || wrapper.classList.contains('auto-paging')) {
+                return;
+            }
 
             const formEl = wrapper.querySelector('form');
-            if (!formEl) return;
+            if (!formEl) {
+                return;
+            }
 
             wrapper.dataset.autoPaging = '1';
 
@@ -806,6 +814,9 @@ jQuery(function ($) {
                     sourceInput.value = current_page;
                     targetInput.value = parseInt(current_page) + 1;
                     nextBtn.click();
+                } else {
+                    // Fallback: If we can't find elements to auto-page
+                    hcMainSection.find('#loading-spinner').hide();
                 }
 
                 // Clean URL: remove everything after # and the # itself
@@ -814,19 +825,19 @@ jQuery(function ($) {
                 }
 
                 wrapper.dataset.autoPaging = '0';
-
             }, 150);
         }
         else if (preLeadData && preLeadData.Status === 'No EOI') {
+            // This is the results page for ineligible users
+
             let heading = hcMainSection.find('.sidebar .heading');
-            heading.text(getCaldText('main_heading.results', 'Results'));
+            if (heading.length) heading.text(getCaldText('main_heading.results', 'Results'));
             hcMainSection.find('.gform_wrapper').remove();
             hcMainSection.find('.sidebar').addClass('mobile-hidden');
             hcMainSection.find('.sidebar .languages').hide();
 
             hcMainSection.find('.sidebar .progress-steps .progress-step').each(function () {
-                const $step = $(this);
-                $step.addClass('completed');
+                $(this).addClass('completed');
             });
 
             smoothScrollTo(Math.max(hcFormWrapper.offset().top - 220, 0), 300);

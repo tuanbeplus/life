@@ -3,6 +3,11 @@
  * Template Name: Life! Health Check
  */
 
+// Prevent caching for this page to ensure lead data is always fresh
+if (isset($_GET['lead_id']) && !empty($_GET['lead_id'])) {
+    nocache_headers();
+}
+
 setup_postdata($post);
 $page_lang = pageLang()->lang ?? 'en';
 get_header(null, ['bodyClass' => 'life-health-check ' . $page_lang ]);
@@ -37,6 +42,11 @@ function get_cald_text($key, $default = '') {
     <?php echoTemplate('widget/breadcrumbs'); ?>
     <section class="health-check-section center-frame">
         <div class="container">
+            <div id="loading-spinner">
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24">
+                    <path d="M12 2a10 10 0 1 1-10 10" fill="none" stroke="#8dc63f" stroke-width="2" stroke-linecap="round" />
+                </svg>
+            </div>
             <div class="sidebar">
                 <!-- Get Started Section -->
                 <div class="get-started-section">
@@ -95,11 +105,6 @@ function get_cald_text($key, $default = '') {
                 <div class="non_vic_postcodes-block" style="display:none;">
                     <input id="non_vic_postcodes_json" type="hidden" value="<?php echo esc_attr( $non_vic_postcodes ); ?>">
                     <input id="pre_lead_data" type="hidden" value="<?php echo esc_attr( json_encode($pre_lead_data) ); ?>">
-                </div>
-                <div id="loading-spinner">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24">
-                        <path d="M12 2a10 10 0 1 1-10 10" fill="none" stroke="#8dc63f" stroke-width="2" stroke-linecap="round" />
-                    </svg>
                 </div>
                 <?php echo do_shortcode( '[gravityform id="' . esc_attr($gravity_form_id) . '" title="false" description="false" ajax="true"]' ); ?>
                 <?php if(!empty($pre_lead_data) && $pre_lead_data['Status'] == 'No EOI') : ?>
